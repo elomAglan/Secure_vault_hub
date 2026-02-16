@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Terminal, 
@@ -9,14 +10,14 @@ import {
   ChevronRight, 
   Code2, 
   BookOpen, 
-  Cpu,
-  Layers
+  Layers,
+  LayoutDashboard,
+  ArrowRight
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 
-// --- DONNÉES DE DOCUMENTATION ---
 const FRAMEWORKS = [
   {
     id: 'nextjs',
@@ -53,6 +54,7 @@ const FRAMEWORKS = [
 ]
 
 export default function DocumentationPage() {
+  const router = useRouter()
   const [selectedId, setSelectedId] = useState(FRAMEWORKS[0].id)
   const [copied, setCopied] = useState(false)
 
@@ -68,7 +70,7 @@ export default function DocumentationPage() {
     <div className="min-h-screen bg-[#F9FAFB] text-slate-900 font-sans">
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-0 min-h-screen">
         
-        {/* BARRE LATÉRALE GAUCHE : LISTE DES FRAMEWORKS */}
+        {/* BARRE LATÉRALE GAUCHE */}
         <aside className="lg:col-span-4 bg-white border-r border-slate-200 p-8 space-y-8">
           <div>
             <div className="flex items-center gap-2 text-blue-600 font-bold text-xs uppercase tracking-[0.2em] mb-3">
@@ -107,7 +109,7 @@ export default function DocumentationPage() {
                       "font-bold text-sm",
                       selectedId === tech.id ? "text-blue-900" : "text-slate-600"
                     )}>{tech.name}</p>
-                    <p className="text-[11px] text-slate-400 font-medium">{tech.description}</p>
+                    <p className="text-[11px] text-slate-400 font-medium text-ellipsis overflow-hidden whitespace-nowrap w-32 md:w-48">{tech.description}</p>
                   </div>
                 </div>
                 <ChevronRight className={cn(
@@ -119,8 +121,20 @@ export default function DocumentationPage() {
           </nav>
         </aside>
 
-        {/* SECTION DROITE : DOCUMENTATION DYNAMIQUE */}
-        <main className="lg:col-span-8 p-8 lg:p-16 overflow-y-auto">
+        {/* SECTION DROITE */}
+        <main className="lg:col-span-8 p-8 lg:p-16 overflow-y-auto relative">
+          
+          {/* BOUTON DASHBOARD - HAUT DROITE */}
+          <div className="flex justify-end mb-12">
+            <Button 
+              onClick={() => router.push('/dashboard')}
+              className="bg-white hover:bg-slate-50 text-slate-900 border-2 border-slate-200 h-12 px-6 rounded-xl font-bold flex items-center gap-3 transition-all active:scale-95 shadow-sm"
+            >
+              <LayoutDashboard className="h-4 w-4 text-blue-600" />
+              Aller au Dashboard
+            </Button>
+          </div>
+
           <AnimatePresence mode="wait">
             <motion.div
               key={selectedId}
@@ -130,7 +144,6 @@ export default function DocumentationPage() {
               transition={{ duration: 0.2 }}
               className="max-w-3xl space-y-10"
             >
-              {/* Header de Doc */}
               <div className="space-y-4">
                 <div className="h-14 w-14 bg-white rounded-2xl border-2 border-slate-100 flex items-center justify-center shadow-sm">
                    <img src={activeTech.icon} alt="" className="h-8 w-8" />
@@ -154,7 +167,7 @@ export default function DocumentationPage() {
                   <div className="absolute top-4 left-4 text-slate-500">
                     <Terminal className="h-4 w-4" />
                   </div>
-                  <pre className="bg-slate-900 text-slate-100 p-6 pt-12 rounded-2xl font-mono text-sm overflow-x-auto shadow-xl">
+                  <pre className="bg-slate-900 text-slate-100 p-6 pt-12 rounded-2xl font-mono text-sm overflow-x-auto shadow-xl border border-white/5">
                     <code>{activeTech.install}</code>
                   </pre>
                   <Button 
@@ -175,10 +188,6 @@ export default function DocumentationPage() {
                   <div className="h-8 w-8 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold">2</div>
                   <h3 className="text-xl font-bold text-slate-800">Initialisation</h3>
                 </div>
-                <p className="text-slate-500 text-sm">
-                  Ajoutez ce bloc de code pour connecter votre projet à l'API de SecureVault.
-                </p>
-
                 <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
                   <div className="bg-slate-50 px-4 py-2 border-b border-slate-200 flex items-center justify-between">
                      <span className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2">
@@ -191,26 +200,29 @@ export default function DocumentationPage() {
                 </div>
               </div>
 
-              {/* Aide supplémentaire */}
-              <Card className="p-6 bg-blue-600 border-none rounded-3xl text-white shadow-lg shadow-blue-100 flex items-center justify-between">
+              {/* SECTION BAS : BOUTON ALLER AU DASHBOARD (SUIVANT) */}
+              <div className="pt-12 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-6">
                 <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 bg-white/10 rounded-xl flex items-center justify-center">
-                    <BookOpen className="h-6 w-6" />
+                  <div className="h-10 w-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center">
+                    <Check className="h-5 w-5" />
                   </div>
-                  <div>
-                    <h4 className="font-bold">Besoin de plus de détails ?</h4>
-                    <p className="text-blue-100 text-xs">Consultez la documentation complète de l'API.</p>
-                  </div>
+                  <p className="text-slate-500 text-sm font-medium italic">
+                    Installation terminée ? Passez à la suite.
+                  </p>
                 </div>
-                <Button className="bg-white text-blue-600 hover:bg-blue-50 font-bold rounded-xl px-6">
-                  Voir tout
+                
+                <Button 
+                  onClick={() => router.push('/dashboard')}
+                  className="bg-blue-600 hover:bg-blue-700 text-white h-14 px-8 rounded-2xl font-bold flex items-center gap-3 transition-all active:scale-95 shadow-lg shadow-blue-100 w-full sm:w-auto"
+                >
+                  Aller au Dashboard
+                  <ArrowRight className="h-5 w-5" />
                 </Button>
-              </Card>
+              </div>
 
             </motion.div>
           </AnimatePresence>
         </main>
-
       </div>
     </div>
   )

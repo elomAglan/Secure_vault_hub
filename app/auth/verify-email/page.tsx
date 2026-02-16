@@ -161,7 +161,7 @@ export default function VerifyEmailPage() {
         )}
 
         <div className="text-center">
-          <Link href="/login" className="text-xs font-bold text-slate-400 hover:text-slate-900 transition-colors uppercase tracking-widest">
+          <Link href="/auth/login" className="text-xs font-bold text-slate-400 hover:text-slate-900 transition-colors uppercase tracking-widest">
             Utiliser un autre compte
           </Link>
         </div>
