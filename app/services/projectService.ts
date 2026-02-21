@@ -1,0 +1,36 @@
+import api from "@/lib/api";
+import { AuthProvider, Theme } from "@/types/project";
+
+export interface CreateProjectPayload {
+    name: string;
+    authProviders: AuthProvider[];
+    theme: Theme;
+    primaryColor: string;
+}
+
+export interface Project {
+    id: number;
+    name: string;
+    publicKey: string;
+    secretKey: string;
+    authProviders: AuthProvider[];
+    theme: Theme;
+    primaryColor: string;
+    createdAt: string;
+}
+
+export const projectService = {
+    create: async (data: CreateProjectPayload): Promise<Project> => {
+        const response = await api.post("/api/projects", data);
+        return response.data;
+    },
+
+    getAll: async (): Promise<Project[]> => {
+        const response = await api.get("/api/projects");
+        return response.data;
+    },
+
+    delete: async (id: number): Promise<void> => {
+        await api.delete(`/api/projects/${id}`);
+    },
+};
