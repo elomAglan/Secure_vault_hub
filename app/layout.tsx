@@ -10,7 +10,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="relative flex min-h-screen flex-col">
           {children}
         </div>
-        <Toaster position="top-center" richColors />
+        <Toaster
+          position="top-right"
+          richColors
+          closeButton
+          toastOptions={{
+            style: {
+              borderRadius: '12px',
+              fontFamily: 'inherit',
+              fontSize: '14px',
+            },
+          }}
+        />
       </body>
     </html>
   )

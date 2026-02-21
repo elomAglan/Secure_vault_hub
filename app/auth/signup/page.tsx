@@ -9,8 +9,14 @@ import { Label } from '@/components/ui/label'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Check, X, ArrowRight, ShieldCheck, Zap, Code, Lock } from 'lucide-react'
+import { useAuthStore } from '@/store/authStore'
+import { useRouter } from 'next/navigation'
+import { LoadingOverlay } from '@/components/shared/LoadingOverlay'
 
 export default function UserSignupPage() {
+  const { register, isLoading, error, clearError } = useAuthStore()
+  const router = useRouter()
+
   const mouseX = useMotionValue(0)
   const mouseY = useMotionValue(0)
   const smoothX = useSpring(mouseX, { damping: 25, stiffness: 200 })
@@ -22,16 +28,32 @@ export default function UserSignupPage() {
     mouseY.set(clientY - top)
   }
 
-  const [formData, setFormData] = useState({ name: '', email: '', password: '' })
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+  })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
+    clearError()
     setFormData({ ...formData, [name]: value })
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    window.location.href = '/auth/verify-email' // Simulation de succès
+    try {
+      await register({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+      })
+      router.push('/dashboard')
+    } catch {
+      // erreur déjà gérée dans le store via auth.ts
+    }
   }
 
   const passwordStrength = {
@@ -50,10 +72,16 @@ export default function UserSignupPage() {
   ]
 
   return (
-    <div 
+    <div
       className="relative flex min-h-screen items-center justify-center bg-[#F9FAFB] px-4 py-12 text-slate-900 overflow-hidden"
       onMouseMove={handleMouseMove}
     >
+      {/* OVERLAY DE CHARGEMENT CENTRALISÉ */}
+      <LoadingOverlay
+        isVisible={isLoading}
+        message="Création de votre compte..."
+        subMessage="Chiffrement de vos données en cours"
+      />
       {/* EFFET DE CURSEUR */}
       <motion.div
         className="pointer-events-none absolute inset-0 z-0"
@@ -66,11 +94,11 @@ export default function UserSignupPage() {
       />
 
       <div className="relative z-10 w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-        
-        {/* COLONNE GAUCHE : ÉTAPES */}
+
+        {/* COLONNE GAUCHE */}
         <div className="space-y-10 lg:pr-12">
           <div className="space-y-4">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               className="flex items-center gap-3"
@@ -87,11 +115,9 @@ export default function UserSignupPage() {
           </div>
 
           <div className="space-y-8 relative">
-            {/* Ligne verticale décorative */}
             <div className="absolute left-[23px] top-2 bottom-2 w-px bg-slate-200" />
-            
             {steps.map((step, idx) => (
-              <motion.div 
+              <motion.div
                 key={idx}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -124,25 +150,76 @@ export default function UserSignupPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-5">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nom complet</Label>
-                  <Input id="name" name="name" required placeholder="John Doe" value={formData.name} onChange={handleChange} className="rounded-xl border-slate-200 bg-slate-50/50 h-12" />
+
+                {/* PRÉNOM + NOM */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName">Prénom</Label>
+                    <Input
+                      id="firstName"
+                      name="firstName"
+                      required
+                      placeholder="John"
+                      value={formData.firstName}
+                      onChange={handleChange}
+                      className="rounded-xl border-slate-200 bg-slate-50/50 h-12"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Nom</Label>
+                    <Input
+                      id="lastName"
+                      name="lastName"
+                      required
+                      placeholder="Doe"
+                      value={formData.lastName}
+                      onChange={handleChange}
+                      className="rounded-xl border-slate-200 bg-slate-50/50 h-12"
+                    />
+                  </div>
                 </div>
 
+                {/* EMAIL */}
                 <div className="space-y-2">
                   <Label htmlFor="email">Email professionnel</Label>
-                  <Input id="email" name="email" type="email" required placeholder="john@company.com" value={formData.email} onChange={handleChange} className="rounded-xl border-slate-200 bg-slate-50/50 h-12" />
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    required
+                    placeholder="john@company.com"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="rounded-xl border-slate-200 bg-slate-50/50 h-12"
+                  />
                 </div>
 
+                {/* MOT DE PASSE */}
                 <div className="space-y-2">
                   <Label htmlFor="password">Mot de passe</Label>
-                  <Input id="password" name="password" type="password" required placeholder="••••••••" value={formData.password} onChange={handleChange} className="rounded-xl border-slate-200 bg-slate-50/50 h-12" />
-                  
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    required
+                    placeholder="••••••••"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="rounded-xl border-slate-200 bg-slate-50/50 h-12"
+                  />
+
                   {formData.password && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-100 grid grid-cols-2 gap-2">
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-100 grid grid-cols-2 gap-2"
+                    >
                       {Object.entries(passwordStrength).map(([key, valid], i) => (
                         <div key={key} className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider">
-                          {valid ? <Check className="h-3 w-3 text-green-500" /> : <X className="h-3 w-3 text-slate-300" />}
+                          {valid
+                            ? <Check className="h-3 w-3 text-green-500" />
+                            : <X className="h-3 w-3 text-slate-300" />
+                          }
                           <span className={valid ? 'text-slate-900' : 'text-slate-400'}>
                             {['8+ carac.', 'Majuscule', 'Minuscule', 'Chiffre'][i]}
                           </span>
@@ -152,20 +229,29 @@ export default function UserSignupPage() {
                   )}
                 </div>
 
-                <Button type="submit" className="w-full bg-slate-900 py-6 text-white hover:bg-slate-800 rounded-xl font-bold transition-all shadow-xl active:scale-95" disabled={!isStrongPassword && formData.password !== ''}>
-                  Créer mon compte <ArrowRight className="ml-2 h-4 w-4" />
+
+                {/* BOUTON */}
+                <Button
+                  type="submit"
+                  className="w-full bg-slate-900 py-6 text-white hover:bg-slate-800 rounded-xl font-bold transition-all shadow-xl active:scale-95"
+                  disabled={(!isStrongPassword && formData.password !== '') || isLoading}
+                >
+                  {isLoading ? 'Création en cours...' : 'Créer mon compte'}
+                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </form>
 
               <div className="mt-8 text-center">
                 <p className="text-sm text-slate-500">
-                  Déjà client ? <Link href="/auth/login" className="text-blue-600 font-bold hover:underline">Se connecter</Link>
+                  Déjà client ?{' '}
+                  <Link href="/auth/login" className="text-blue-600 font-bold hover:underline">
+                    Se connecter
+                  </Link>
                 </p>
               </div>
             </Card>
           </motion.div>
 
-          {/* SÉCURISÉ PAR SECUREVAULT */}
           <div className="mt-8 flex items-center gap-2 px-4 py-2 bg-slate-100/50 rounded-full border border-slate-200/60">
             <ShieldCheck className="h-4 w-4 text-blue-600" />
             <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500">
