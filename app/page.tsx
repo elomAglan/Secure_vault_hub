@@ -173,7 +173,7 @@ export default function LandingPage() {
                 opacity: { duration: 0.8, delay: 0.2 },
                 x: { duration: 0.8, delay: 0.2 },
                 y: { duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.8 }
-              }}
+              }} 
               className="relative hidden lg:block"
             >
               {/* Halo lumineux derrière l'image */}
