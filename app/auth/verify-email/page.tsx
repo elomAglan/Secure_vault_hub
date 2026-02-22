@@ -73,7 +73,7 @@ export default function VerifyEmailPage() {
               Votre identité a été confirmée avec succès. Vous pouvez maintenant accéder à votre tableau de bord.
             </p>
             <Button asChild className="mt-8 w-full bg-slate-900 py-6 text-white hover:bg-slate-800 rounded-xl font-bold shadow-lg">
-              <Link href="/first_app">
+              <Link href="/first_app?from=register">
                 Accéder à la configuration <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>

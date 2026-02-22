@@ -1,22 +1,24 @@
 'use client'
 
-import React, { useState, useMemo, useCallback } from 'react'
+import React, { useState, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import {
-  LayoutDashboard, Package, Users, Activity, Settings, 
-  Shield, Mail, Webhook, FileText, CreditCard, 
-  Users2, ChevronLeft, ChevronRight, LogOut
+  LayoutDashboard, Package, Users, Activity, Settings,
+  Shield, Mail, Webhook, FileText, CreditCard,
+  Users2, ChevronLeft, LogOut, Key // Importation de l'icône Key
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
+import { authApi } from '@/lib/auth'
 
-// On sort les données statiques du cycle de rendu pour éviter la re-création mémoire
 const NAV_ITEMS = [
   { label: 'Tableau de bord', href: '/dashboard', icon: LayoutDashboard },
   { label: 'Projets', href: '/dashboard/projects', icon: Package },
+  // AJOUT DE LA SECTION API KEYS
+  { label: 'Clés API', href: '/dashboard/api-keys', icon: Key },
   { label: 'Utilisateurs', href: '/dashboard/users', icon: Users },
   { label: 'Sessions', href: '/dashboard/sessions', icon: Activity },
   { label: 'Authentification', href: '/dashboard/authentication', icon: Shield },
@@ -30,10 +32,20 @@ const NAV_ITEMS = [
 
 export function Sidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   const [isCollapsed, setIsCollapsed] = useState(false)
 
-  // Memoïsation du toggle pour éviter les re-renders inutiles des composants enfants
   const toggleSidebar = useCallback(() => setIsCollapsed(prev => !prev), [])
+
+  const handleLogout = async () => {
+    try {
+      await authApi.logout()
+    } catch (error) {
+      console.error('Logout failed', error)
+    } finally {
+      router.replace('/auth/login')
+    }
+  }
 
   return (
     <aside
@@ -42,7 +54,6 @@ export function Sidebar() {
         isCollapsed ? 'w-[80px]' : 'w-64'
       )}
     >
-      {/* Bouton Toggle optimisé */}
       <div className="absolute -right-3 top-10 z-50">
         <Button
           onClick={toggleSidebar}
@@ -59,20 +70,19 @@ export function Sidebar() {
         </Button>
       </div>
 
-      {/* Header Logo - Optimisé avec transform-gpu */}
       <div className={cn('flex h-20 items-center px-6 transition-all', isCollapsed && 'justify-center px-2')}>
         <Link href="/dashboard" className="flex items-center gap-3 will-change-transform">
-          <Image 
-            src="/bouclier.png" 
-            alt="Logo" 
-            width={32} 
-            height={32} 
-            priority // Charge le logo immédiatement
+          <Image
+            src="/bouclier.png"
+            alt="Logo"
+            width={32}
+            height={32}
+            priority
             className="shrink-0 transition-transform active:scale-95"
           />
           <AnimatePresence mode="wait">
             {!isCollapsed && (
-              <motion.span 
+              <motion.span
                 initial={{ opacity: 0, x: -5 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -5 }}
@@ -85,13 +95,12 @@ export function Sidebar() {
         </Link>
       </div>
 
-      {/* Navigation avec LayoutGroup pour fluidifier les mouvements de l'indicateur actif */}
       <LayoutGroup>
         <nav className="flex-1 space-y-1 overflow-y-auto p-4 scrollbar-none overscroll-contain">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon
-            const isActive = item.href === '/dashboard' 
-              ? pathname === '/dashboard' 
+            const isActive = item.href === '/dashboard'
+              ? pathname === '/dashboard'
               : pathname.startsWith(item.href)
 
             return (
@@ -104,9 +113,8 @@ export function Sidebar() {
                   isCollapsed && 'justify-center px-2'
                 )}
               >
-                {/* Background actif animé */}
                 {isActive && (
-                  <motion.div 
+                  <motion.div
                     layoutId="active-bg"
                     className="absolute inset-0 bg-primary/10 rounded-xl -z-10"
                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
@@ -114,12 +122,12 @@ export function Sidebar() {
                 )}
 
                 <Icon className={cn(
-                  "h-5 w-5 shrink-0 transition-transform duration-200", 
+                  "h-5 w-5 shrink-0 transition-transform duration-200",
                   isActive ? "scale-110" : "group-hover:scale-110"
                 )} />
-                
+
                 {!isCollapsed && (
-                  <motion.span 
+                  <motion.span
                     layout
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -130,7 +138,7 @@ export function Sidebar() {
                 )}
 
                 {isActive && (
-                  <motion.div 
+                  <motion.div
                     layoutId="active-bar"
                     className="absolute left-0 h-5 w-1 bg-primary rounded-r-full"
                   />
@@ -141,12 +149,14 @@ export function Sidebar() {
         </nav>
       </LayoutGroup>
 
-      {/* Footer / Déconnexion */}
       <div className="p-4 mt-auto border-t border-border/40">
-        <button className={cn(
-          "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-500 hover:bg-red-50/50 transition-colors duration-200",
-          isCollapsed && "justify-center px-2"
-        )}>
+        <button
+          onClick={() => void handleLogout()}
+          className={cn(
+            "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-500 hover:bg-red-50/50 transition-colors duration-200",
+            isCollapsed && "justify-center px-2"
+          )}
+        >
           <LogOut className="h-5 w-5" />
           {!isCollapsed && <span>Déconnexion</span>}
         </button>
@@ -154,3 +164,4 @@ export function Sidebar() {
     </aside>
   )
 }
+

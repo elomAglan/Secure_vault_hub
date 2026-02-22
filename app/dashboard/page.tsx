@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -23,6 +24,12 @@ import {
 } from '@/lib/mock-data'
 
 export default function DashboardPage() {
+  const [isHydrated, setIsHydrated] = useState(false)
+
+  useEffect(() => {
+    setIsHydrated(true)
+  }, [])
+
   const stats = [
     {
       label: 'Total Users',
@@ -129,7 +136,7 @@ export default function DashboardPage() {
                 <p className="font-medium text-sm">{log.action}</p>
                 <p className="text-xs text-foreground/60 mt-1">{log.details}</p>
                 <p className="text-xs text-foreground/40 mt-1">
-                  {log.timestamp.toLocaleTimeString()}
+                  {isHydrated ? log.timestamp.toLocaleTimeString() : '--:--:--'}
                 </p>
               </div>
               <Badge variant="outline">{log.userName}</Badge>

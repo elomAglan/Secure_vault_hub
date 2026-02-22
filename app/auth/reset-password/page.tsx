@@ -55,7 +55,7 @@ export default function ResetPasswordPage() {
           </div>
 
           <Button asChild className="w-full">
-            <Link href="/login">Go to login</Link>
+            <Link href="/auth/login">Go to login</Link>
           </Button>
         </div>
       </div>

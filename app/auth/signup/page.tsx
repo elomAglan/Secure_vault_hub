@@ -50,7 +50,7 @@ export default function UserSignupPage() {
         email: formData.email,
         password: formData.password,
       })
-      router.push('/first_app')
+      router.push('/first_app?from=register')
     } catch {
       // erreur déjà gérée dans le store via auth.ts
     }

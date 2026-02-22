@@ -1,4 +1,6 @@
 import api from "./api";
+import { saveTokens, clearTokens } from "./api";
+import axios from "axios";
 
 export interface AuthResponse {
   accessToken: string;
@@ -21,22 +23,57 @@ export interface RegisterData {
 export interface LoginData {
   email: string;
   password: string;
+  remember?: boolean; // 👈 pour choisir local ou session
 }
 
 export const authApi = {
-  register: async (data: RegisterData): Promise<AuthResponse> => {
-    const response = await api.post("/api/auth/register", data);
+  async register(
+    data: RegisterData & { remember?: boolean }
+  ): Promise<AuthResponse> {
+    const { remember = true, ...payload } = data;
+
+    const response = await api.post<AuthResponse>(
+      "/api/auth/register",
+      payload
+    );
+
+    saveTokens(
+      response.data.accessToken,
+      response.data.refreshToken,
+      remember
+    );
+
     return response.data;
   },
 
-  login: async (data: LoginData): Promise<AuthResponse> => {
-    const response = await api.post("/api/auth/login", data);
+  async login(data: LoginData): Promise<AuthResponse> {
+    const { remember = true, ...payload } = data;
+
+    const response = await api.post<AuthResponse>(
+      "/api/auth/login",
+      payload
+    );
+
+    saveTokens(
+      response.data.accessToken,
+      response.data.refreshToken,
+      remember
+    );
+
     return response.data;
   },
 
-  logout: async (): Promise<void> => {
-    await api.post("/api/auth/logout");
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
+  async logout(): Promise<void> {
+    try {
+      await api.post("/api/auth/logout");
+    } catch (error) {
+      // If token/session is already invalid, logout should still succeed client-side.
+      if (axios.isAxiosError(error) && [401, 403].includes(error.response?.status ?? 0)) {
+        return;
+      }
+      throw error;
+    } finally {
+      clearTokens();
+    }
   },
 };

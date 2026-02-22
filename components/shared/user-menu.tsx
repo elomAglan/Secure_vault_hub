@@ -13,7 +13,11 @@ import { Button } from '@/components/ui/button'
 import { LogOut, Settings, User } from 'lucide-react'
 import Link from 'next/link'
 
-export function UserMenu() {
+type UserMenuProps = {
+  onLogout?: () => void | Promise<void>
+}
+
+export function UserMenu({ onLogout }: UserMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -40,7 +44,7 @@ export function UserMenu() {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={() => void onLogout?.()}>
           <LogOut className="mr-2 h-4 w-4" />
           <span>Sign out</span>
         </DropdownMenuItem>

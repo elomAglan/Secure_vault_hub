@@ -1,5 +1,7 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
+
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Search, Menu } from 'lucide-react'
@@ -8,7 +10,21 @@ import { UserMenu } from '@/components/shared/user-menu'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Sidebar } from './sidebar'
 
+import { authApi } from '@/lib/auth'
+
 export function Navbar() {
+  const router = useRouter()
+
+  const handleLogout = async () => {
+    try {
+      await authApi.logout()
+    } catch (error) {
+      console.error('Logout failed', error)
+    } finally {
+      router.replace('/auth/login')
+    }
+  }
+
   return (
     <header className="border-b border-border bg-background sticky top-0 z-40">
       <div className="flex h-16 items-center justify-between px-6">
@@ -38,9 +54,12 @@ export function Navbar() {
         {/* Right Actions */}
         <div className="flex items-center gap-2">
           <NotificationBell />
-          <UserMenu />
+
+          {/* 👇 on passe la fonction logout au menu */}
+          <UserMenu onLogout={handleLogout} />
         </div>
       </div>
     </header>
   )
 }
+

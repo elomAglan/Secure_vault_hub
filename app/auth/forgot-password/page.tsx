@@ -72,7 +72,7 @@ export default function ForgotPasswordPage() {
                 Vous n'avez rien reçu ? Vérifiez vos spams ou réessayez avec une autre adresse.
               </p>
               <Button asChild variant="outline" className="w-full border-slate-200 text-slate-600 hover:bg-slate-50 py-6 rounded-xl font-bold">
-                <Link href="/login">Retour à la connexion</Link>
+                <Link href="/auth/login">Retour à la connexion</Link>
               </Button>
             </Card>
           </motion.div>

@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import {
@@ -41,7 +41,9 @@ const COLOR_OPTIONS = [
 
 export default function CreateAppPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { createProject, isLoading, error, clearError } = useProjectStore()
+  const isFromRegister = searchParams.get('from') === 'register'
 
   const [appName, setAppName]           = useState('')
   const [nameError, setNameError]       = useState(false)
@@ -75,7 +77,7 @@ export default function CreateAppPage() {
       theme,
       primaryColor,
     })
-    router.push('/overview')
+    router.push(isFromRegister ? '/overview' : '/dashboard/projects')
   } catch {
     // erreur déjà dans le store
   }
@@ -111,7 +113,19 @@ export default function CreateAppPage() {
               <Layout className="h-4 w-4" />
               Configuration
             </div>
-            <h1 className="text-3xl font-extrabold tracking-tight">Nouvelle Application</h1>
+            <div className="flex items-center justify-between gap-3">
+              <h1 className="text-3xl font-extrabold tracking-tight">Nouvelle Application</h1>
+              {isFromRegister && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-xl"
+                  onClick={() => router.push('/overview')}
+                >
+                  Skip
+                </Button>
+              )}
+            </div>
           </header>
 
           <div className="space-y-6">
@@ -358,3 +372,4 @@ export default function CreateAppPage() {
     </div>
   )
 }
+
