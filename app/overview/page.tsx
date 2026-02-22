@@ -4,51 +4,24 @@ import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
-  Terminal, 
-  Copy, 
-  Check, 
-  ChevronRight, 
-  Code2, 
-  Layers,
-  LayoutDashboard,
-  ArrowRight
+  Terminal, Copy, Check, ChevronRight, Code2, 
+  Layers, LayoutDashboard, ArrowRight, Shield
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 const FRAMEWORKS = [
-  {
-    id: 'nextjs',
-    name: 'Next.js',
-    icon: '/icons/icons8-next.js-48.png'
-  },
-  {
-    id: 'react',
-    name: 'React',
-    icon: '/icons/icons8-react-80.png'
-  },
-  {
-    id: 'node',
-    name: 'Node.js',
-    icon: '/icons/icons8-node-js-48.png'
-  },
-  {
-    id: 'python',
-    name: 'Python / Django',
-    icon: '/icons/icons8-python-48.png'
-  },
-  {
-    id: 'vanilla',
-    name: 'JavaScript',
-    icon: '/icons/vanila icon.png'
-  }
+  { id: 'nextjs', name: 'Next.js', icon: '/icons/icons8-next.js-48.png' },
+  { id: 'react', name: 'React', icon: '/icons/icons8-react-80.png' },
+  { id: 'node', name: 'Node.js', icon: '/icons/icons8-node-js-48.png' },
+  { id: 'python', name: 'Python / Django', icon: '/icons/icons8-python-48.png' },
+  { id: 'vanilla', name: 'JavaScript', icon: '/icons/vanila icon.png' }
 ]
 
 const INSTALL_CMD = 'npm install @vaultsecure/js'
 
-const SETUP_CODE = `import { SecureVault } from '@vaultsecure/js'
+const SDK_CODE = `import { SecureVault } from '@vaultsecure/js'
 
-// Initialiser avec votre clé publique
 const vault = new SecureVault({
   publicKey: 'pk_votre_cle_publique',
   baseUrl: 'https://api.securevault.com'
@@ -77,39 +50,68 @@ const isConnected = vault.isSignedIn()
 // Déconnexion
 vault.signOut()`
 
-const METHODS = [
-  { method: 'vault.signUp()', desc: 'Créer un compte utilisateur' },
-  { method: 'vault.signIn()', desc: 'Connecter un utilisateur' },
-  { method: 'vault.signOut()', desc: 'Déconnecter l\'utilisateur' },
-  { method: 'vault.getUser()', desc: 'Récupérer l\'utilisateur connecté' },
-  { method: 'vault.isSignedIn()', desc: 'Vérifier si connecté' },
+const ADMIN_CODE = `import { VaultAdmin } from '@vaultsecure/js'
+
+// Initialiser avec votre clé SECRÈTE (backend uniquement !)
+const admin = new VaultAdmin(
+  'sk_votre_cle_secrete',
+  'https://api.securevault.com'
+)
+
+// Lister tous les utilisateurs
+const users = await admin.getUsers()
+
+// Vérifier un token JWT
+const result = await admin.verifyToken('eyJhbGci...')
+if (result.valid) {
+  console.log('Connecté en tant que :', result.email)
+}
+
+// Désactiver un utilisateur
+await admin.disableUser('user@example.com')
+
+// Réactiver un utilisateur
+await admin.enableUser('user@example.com')
+
+// Supprimer un utilisateur
+await admin.deleteUser('user@example.com')`
+
+const SDK_METHODS = [
+  { method: 'vault.signUp(params)', desc: 'Créer un compte utilisateur', returns: 'Promise<VaultUser>' },
+  { method: 'vault.signIn(params)', desc: 'Connecter un utilisateur', returns: 'Promise<VaultUser>' },
+  { method: 'vault.signOut()', desc: 'Déconnecter l\'utilisateur', returns: 'void' },
+  { method: 'vault.getUser()', desc: 'Récupérer l\'utilisateur connecté', returns: 'VaultUser | null' },
+  { method: 'vault.isSignedIn()', desc: 'Vérifier si l\'utilisateur est connecté', returns: 'boolean' },
+]
+
+const ADMIN_METHODS = [
+  { method: 'admin.getUsers()', desc: 'Lister tous les utilisateurs du projet', returns: 'Promise<AdminUser[]>' },
+  { method: 'admin.verifyToken(token)', desc: 'Vérifier un token JWT', returns: 'Promise<TokenVerification>' },
+  { method: 'admin.disableUser(email)', desc: 'Désactiver un utilisateur', returns: 'Promise<void>' },
+  { method: 'admin.enableUser(email)', desc: 'Réactiver un utilisateur', returns: 'Promise<void>' },
+  { method: 'admin.deleteUser(email)', desc: 'Supprimer un utilisateur', returns: 'Promise<void>' },
 ]
 
 export default function DocumentationPage() {
   const router = useRouter()
   const [selectedId, setSelectedId] = useState(FRAMEWORKS[0].id)
   const [copiedInstall, setCopiedInstall] = useState(false)
-  const [copiedSetup, setCopiedSetup] = useState(false)
+  const [copiedSdk, setCopiedSdk] = useState(false)
+  const [copiedAdmin, setCopiedAdmin] = useState(false)
 
   const activeTech = FRAMEWORKS.find(f => f.id === selectedId) || FRAMEWORKS[0]
 
-  const copyInstall = () => {
-    navigator.clipboard.writeText(INSTALL_CMD)
-    setCopiedInstall(true)
-    setTimeout(() => setCopiedInstall(false), 2000)
-  }
-
-  const copySetup = () => {
-    navigator.clipboard.writeText(SETUP_CODE)
-    setCopiedSetup(true)
-    setTimeout(() => setCopiedSetup(false), 2000)
+  const copy = (text: string, setter: (v: boolean) => void) => {
+    navigator.clipboard.writeText(text)
+    setter(true)
+    setTimeout(() => setter(false), 2000)
   }
 
   return (
     <div className="h-screen overflow-hidden bg-[#F9FAFB] text-slate-900 font-sans">
       <div className="max-w-7xl mx-auto flex h-full border-x border-slate-200 bg-white">
         
-        {/* BARRE LATÉRALE GAUCHE */}
+        {/* SIDEBAR */}
         <aside className="w-[380px] flex-shrink-0 border-r border-slate-200 p-8 flex flex-col">
           <div className="mb-10">
             <div className="flex items-center gap-2 text-blue-600 font-bold text-xs uppercase tracking-[0.2em] mb-3">
@@ -120,12 +122,13 @@ export default function DocumentationPage() {
               Intégrations
             </h1>
             <p className="text-slate-500 mt-2 text-sm leading-relaxed">
-              Le SDK est identique pour tous les frameworks. Choisissez le vôtre pour un aperçu adapté.
+              Un seul SDK pour tous les frameworks. Choisissez le vôtre pour un aperçu adapté.
             </p>
 
             <div className="mt-4 flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-xl w-fit">
               <Terminal className="h-3 w-3 text-blue-400" />
               <span className="text-xs font-mono font-bold">@vaultsecure/js</span>
+              <span className="text-[10px] bg-blue-600 px-2 py-0.5 rounded-full font-bold">v1.0.1</span>
             </div>
           </div>
 
@@ -169,13 +172,13 @@ export default function DocumentationPage() {
           </nav>
         </aside>
 
-        {/* SECTION DROITE */}
+        {/* MAIN */}
         <main className="flex-1 overflow-y-auto bg-slate-50/30">
           <div className="p-8 lg:p-16 max-w-4xl mx-auto">
             
             <div className="flex justify-end mb-12">
               <Button 
-                onClick={() => router.push('/overview')}
+                onClick={() => router.push('/dashboard')}
                 className="bg-white hover:bg-slate-50 text-slate-900 border-2 border-slate-200 h-12 px-6 rounded-xl font-bold flex items-center gap-3 transition-all active:scale-95 shadow-sm"
               >
                 <LayoutDashboard className="h-4 w-4 text-blue-600" />
@@ -192,6 +195,7 @@ export default function DocumentationPage() {
                 transition={{ duration: 0.3 }}
                 className="space-y-10"
               >
+                {/* HEADER */}
                 <div className="space-y-4">
                   <div className="h-20 w-20 bg-white rounded-3xl border-2 border-slate-100 flex items-center justify-center shadow-md">
                     <img src={activeTech.icon} alt="" className="h-10 w-10 object-contain" />
@@ -204,7 +208,7 @@ export default function DocumentationPage() {
                   </p>
                 </div>
 
-                {/* Étape 1 */}
+                {/* ÉTAPE 1 — INSTALLATION */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold shadow-lg">1</div>
@@ -221,7 +225,7 @@ export default function DocumentationPage() {
                       variant="secondary"
                       size="sm"
                       className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 text-white border-none h-8 rounded-lg text-xs backdrop-blur-sm"
-                      onClick={copyInstall}
+                      onClick={() => copy(INSTALL_CMD, setCopiedInstall)}
                     >
                       {copiedInstall ? <Check className="h-3 w-3 text-green-400 mr-2" /> : <Copy className="h-3 w-3 mr-2" />}
                       {copiedInstall ? 'Copié !' : 'Copier'}
@@ -229,44 +233,94 @@ export default function DocumentationPage() {
                   </div>
                 </div>
 
-                {/* Étape 2 */}
+                {/* ÉTAPE 2 — SDK CLIENT */}
                 <div className="space-y-4 pt-4">
                   <div className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold shadow-lg">2</div>
-                    <h3 className="text-xl font-bold text-slate-800 tracking-tight">Initialisation & utilisation</h3>
+                    <h3 className="text-xl font-bold text-slate-800 tracking-tight">SDK Client — Authentification</h3>
                   </div>
+                  <p className="text-sm text-slate-500 ml-11">
+                    Utilisez la <span className="font-bold text-blue-600">clé publique</span> dans votre frontend. Elle peut être exposée sans risque.
+                  </p>
                   <div className="bg-white border-2 border-slate-100 rounded-3xl overflow-hidden shadow-xl">
                     <div className="bg-slate-50 px-6 py-3 border-b border-slate-100 flex items-center justify-between">
                       <span className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2">
-                        <Code2 className="h-4 w-4" /> Configuration du SDK
+                        <Code2 className="h-4 w-4" /> Frontend / Client
                       </span>
                       <Button
                         variant="ghost"
                         size="sm"
                         className="h-7 px-3 text-xs text-slate-500 hover:text-slate-900"
-                        onClick={copySetup}
+                        onClick={() => copy(SDK_CODE, setCopiedSdk)}
                       >
-                        {copiedSetup ? <Check className="h-3 w-3 text-green-500 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
-                        {copiedSetup ? 'Copié !' : 'Copier'}
+                        {copiedSdk ? <Check className="h-3 w-3 text-green-500 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
+                        {copiedSdk ? 'Copié !' : 'Copier'}
                       </Button>
                     </div>
                     <pre className="p-8 font-mono text-sm text-slate-700 leading-relaxed overflow-x-auto bg-white">
-                      <code>{SETUP_CODE}</code>
+                      <code>{SDK_CODE}</code>
                     </pre>
                   </div>
-                </div>
 
-                {/* Étape 3 */}
-                <div className="space-y-4 pt-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold shadow-lg">3</div>
-                    <h3 className="text-xl font-bold text-slate-800 tracking-tight">Méthodes disponibles</h3>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {METHODS.map((item) => (
+                  {/* MÉTHODES CLIENT */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                    {SDK_METHODS.map((item) => (
                       <div key={item.method} className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
                         <p className="font-mono text-sm font-bold text-blue-600">{item.method}</p>
                         <p className="text-xs text-slate-500 mt-1">{item.desc}</p>
+                        <span className="font-mono text-[10px] bg-slate-100 text-slate-400 px-2 py-0.5 rounded-lg mt-2 inline-block">
+                          {item.returns}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* ÉTAPE 3 — SDK ADMIN */}
+                <div className="space-y-4 pt-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold shadow-lg">3</div>
+                    <h3 className="text-xl font-bold text-slate-800 tracking-tight">SDK Admin — Gestion des utilisateurs</h3>
+                  </div>
+
+                  {/* AVERTISSEMENT */}
+                  <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl p-4 ml-11">
+                    <Shield className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-amber-700 font-medium leading-relaxed">
+                      La <strong>clé secrète</strong> ne doit jamais être exposée dans votre frontend. 
+                      Utilisez-la uniquement dans votre backend (Node.js, API routes, serveur).
+                    </p>
+                  </div>
+
+                  <div className="bg-white border-2 border-slate-100 rounded-3xl overflow-hidden shadow-xl">
+                    <div className="bg-slate-50 px-6 py-3 border-b border-slate-100 flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2">
+                        <Code2 className="h-4 w-4" /> Backend uniquement
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-3 text-xs text-slate-500 hover:text-slate-900"
+                        onClick={() => copy(ADMIN_CODE, setCopiedAdmin)}
+                      >
+                        {copiedAdmin ? <Check className="h-3 w-3 text-green-500 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
+                        {copiedAdmin ? 'Copié !' : 'Copier'}
+                      </Button>
+                    </div>
+                    <pre className="p-8 font-mono text-sm text-slate-700 leading-relaxed overflow-x-auto bg-white">
+                      <code>{ADMIN_CODE}</code>
+                    </pre>
+                  </div>
+
+                  {/* MÉTHODES ADMIN */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                    {ADMIN_METHODS.map((item) => (
+                      <div key={item.method} className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
+                        <p className="font-mono text-sm font-bold text-amber-600">{item.method}</p>
+                        <p className="text-xs text-slate-500 mt-1">{item.desc}</p>
+                        <span className="font-mono text-[10px] bg-slate-100 text-slate-400 px-2 py-0.5 rounded-lg mt-2 inline-block">
+                          {item.returns}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -284,7 +338,7 @@ export default function DocumentationPage() {
                     </div>
                   </div>
                   <Button 
-                    onClick={() => router.push('/overview')}
+                    onClick={() => router.push('/dashboard')}
                     className="bg-blue-600 hover:bg-blue-700 text-white h-14 px-10 rounded-2xl font-bold flex items-center gap-3 transition-all active:scale-95 shadow-xl shadow-blue-200 w-full sm:w-auto"
                   >
                     Aller au Dashboard
