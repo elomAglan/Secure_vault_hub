@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { Input } from '@/components/ui/input'
@@ -14,6 +15,11 @@ import { authApi } from '@/lib/auth'
 
 export function Navbar() {
   const router = useRouter()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handleLogout = async () => {
     try {
@@ -28,19 +34,23 @@ export function Navbar() {
   return (
     <header className="border-b border-border bg-background sticky top-0 z-40">
       <div className="flex h-16 items-center justify-between px-6">
-        {/* Mobile Menu */}
-        <Sheet>
-          <SheetTrigger asChild className="lg:hidden">
-            <Button variant="ghost" size="icon">
-              <Menu className="h-5 w-5" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-64 p-0">
-            <Sidebar />
-          </SheetContent>
-        </Sheet>
+        {mounted ? (
+          <Sheet>
+            <SheetTrigger asChild className="lg:hidden">
+              <Button variant="ghost" size="icon">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-64 p-0">
+              <Sidebar />
+            </SheetContent>
+          </Sheet>
+        ) : (
+          <Button variant="ghost" size="icon" className="lg:hidden" aria-hidden>
+            <Menu className="h-5 w-5" />
+          </Button>
+        )}
 
-        {/* Search */}
         <div className="hidden flex-1 md:flex md:max-w-xs">
           <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/40" />
@@ -51,15 +61,20 @@ export function Navbar() {
           </div>
         </div>
 
-        {/* Right Actions */}
         <div className="flex items-center gap-2">
-          <NotificationBell />
-
-          {/* 👇 on passe la fonction logout au menu */}
-          <UserMenu onLogout={handleLogout} />
+          {mounted ? (
+            <>
+              <NotificationBell />
+              <UserMenu onLogout={handleLogout} />
+            </>
+          ) : (
+            <>
+              <div className="h-9 w-9 rounded-md bg-muted/40" />
+              <div className="h-8 w-8 rounded-full bg-muted/40" />
+            </>
+          )}
         </div>
       </div>
     </header>
   )
 }
-
