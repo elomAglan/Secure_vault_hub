@@ -13,11 +13,16 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Search, Filter } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { mockActivityLogs } from '@/lib/mock-data'
 
 export default function LogsPage() {
   const [searchTerm, setSearchTerm] = useState('')
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const filteredLogs = mockActivityLogs.filter(
     (log) =>
@@ -78,7 +83,9 @@ export default function LogsPage() {
                   className="border-b border-border hover:bg-background/50"
                 >
                   <TableCell className="px-6 py-4 text-sm text-foreground/60">
-                    {log.timestamp.toLocaleString()}
+                    <span suppressHydrationWarning>
+                      {mounted ? log.timestamp.toLocaleString() : '--'}
+                    </span>
                   </TableCell>
                   <TableCell className="px-6 py-4">
                     <span className="text-sm font-medium">{log.userName}</span>

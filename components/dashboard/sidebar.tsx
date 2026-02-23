@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, Package, Users, Activity, Settings,
-  Shield, Mail, Webhook, FileText, CreditCard,
+  Shield, Mail, Webhook, CreditCard,
   Users2, ChevronLeft, LogOut, Key // Importation de l'icône Key
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -24,7 +24,6 @@ const NAV_ITEMS = [
   { label: 'Authentification', href: '/dashboard/authentication', icon: Shield },
   { label: 'Modèles d\'e-mail', href: '/dashboard/emails', icon: Mail },
   { label: 'Webhooks', href: '/dashboard/webhooks', icon: Webhook },
-  { label: 'Logs d\'activité', href: '/dashboard/logs', icon: FileText },
   { label: 'Facturation', href: '/dashboard/billing', icon: CreditCard },
   { label: 'Équipe', href: '/dashboard/team', icon: Users2 },
   { label: 'Paramètres', href: '/dashboard/settings', icon: Settings },
@@ -164,4 +163,5 @@ export function Sidebar() {
     </aside>
   )
 }
+
 
