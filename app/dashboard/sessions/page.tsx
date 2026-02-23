@@ -82,14 +82,14 @@ export default function SessionsPage() {
   const handleRevoke = async (sessionId: number) => {
     if (!selectedProject) return
 
-    if (!window.confirm('Revoquer cette session ?')) return
+    if (!window.confirm('Révoquer cette session ?')) return
 
     try {
       await sessionService.revokeSession(selectedProject.secretKey, sessionId)
-      appToast.success('Session revoquee')
+      appToast.success('Session révoquée')
       await loadSessions(currentPage)
     } catch {
-      appToast.error('Erreur lors de la revocation de la session')
+      appToast.error('Erreur lors de la révocation de la session')
     }
   }
 
@@ -110,7 +110,7 @@ export default function SessionsPage() {
     if (ua.includes('chrome/')) return 'Chrome'
     if (ua.includes('firefox/')) return 'Firefox'
     if (ua.includes('safari/') && !ua.includes('chrome/')) return 'Safari'
-    return 'Unknown'
+    return 'Inconnu'
   }
 
   const getDeviceLabel = (userAgent: string) => {
@@ -121,7 +121,7 @@ export default function SessionsPage() {
     if (ua.includes('windows')) return 'Windows'
     if (ua.includes('mac os')) return 'macOS'
     if (ua.includes('linux')) return 'Linux'
-    return 'Unknown Device'
+    return 'Appareil inconnu'
   }
 
   const formatLastActivity = (iso: string) => {
@@ -130,14 +130,14 @@ export default function SessionsPage() {
     const diffMs = now.getTime() - date.getTime()
     const diffMins = Math.floor(diffMs / 60000)
 
-    if (diffMins < 1) return 'Just now'
-    if (diffMins < 60) return `${diffMins}m ago`
+    if (diffMins < 1) return 'À l\'instant'
+    if (diffMins < 60) return `Il y a ${diffMins}m`
 
     const diffHours = Math.floor(diffMins / 60)
-    if (diffHours < 24) return `${diffHours}h ago`
+    if (diffHours < 24) return `Il y a ${diffHours}h`
 
     const diffDays = Math.floor(diffHours / 24)
-    return `${diffDays}d ago`
+    return `Il y a ${diffDays}j`
   }
 
   return (
@@ -146,7 +146,7 @@ export default function SessionsPage() {
         <div>
           <h1 className="text-3xl font-bold">Sessions</h1>
           <p className="mt-2 text-foreground/60">
-            Monitor active user sessions and devices
+            Surveillez les sessions utilisateur actives et les appareils connectés
           </p>
         </div>
         <Button
@@ -155,12 +155,12 @@ export default function SessionsPage() {
           disabled={isLoading || !selectedProject}
         >
           <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-          Refresh
+          Actualiser
         </Button>
       </div>
 
       <Card className="border border-border p-6">
-        <Label className="mb-2 block">Project</Label>
+        <Label className="mb-2 block">Projet</Label>
         <Select
           value={selectedProjectId}
           onValueChange={(value) => {
@@ -169,7 +169,7 @@ export default function SessionsPage() {
           }}
         >
           <SelectTrigger className="max-w-md">
-            <SelectValue placeholder="Select a project" />
+            <SelectValue placeholder="Sélectionnez un projet" />
           </SelectTrigger>
           <SelectContent>
             {projects.map((project) => (
@@ -186,12 +186,12 @@ export default function SessionsPage() {
           <Table>
             <TableHeader>
               <TableRow className="border-b border-border hover:bg-transparent">
-                <TableHead className="px-6 py-4 font-semibold">Device</TableHead>
-                <TableHead className="px-6 py-4 font-semibold">Browser</TableHead>
-                <TableHead className="px-6 py-4 font-semibold">User</TableHead>
-                <TableHead className="px-6 py-4 font-semibold">IP Address</TableHead>
-                <TableHead className="px-6 py-4 font-semibold">Last Activity</TableHead>
-                <TableHead className="px-6 py-4 font-semibold">Status</TableHead>
+                <TableHead className="px-6 py-4 font-semibold">Appareil</TableHead>
+                <TableHead className="px-6 py-4 font-semibold">Navigateur</TableHead>
+                <TableHead className="px-6 py-4 font-semibold">Utilisateur</TableHead>
+                <TableHead className="px-6 py-4 font-semibold">Adresse IP</TableHead>
+                <TableHead className="px-6 py-4 font-semibold">Dernière activité</TableHead>
+                <TableHead className="px-6 py-4 font-semibold">Statut</TableHead>
                 <TableHead className="px-6 py-4 font-semibold text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -199,7 +199,7 @@ export default function SessionsPage() {
               {!selectedProjectId && (
                 <TableRow>
                   <TableCell colSpan={7} className="px-6 py-8 text-center text-foreground/60">
-                    Select a project to view sessions.
+                    Sélectionnez un projet pour voir les sessions.
                   </TableCell>
                 </TableRow>
               )}
@@ -207,7 +207,7 @@ export default function SessionsPage() {
               {isLoading && selectedProjectId && (
                 <TableRow>
                   <TableCell colSpan={7} className="px-6 py-8 text-center text-foreground/60">
-                    Loading sessions...
+                    Chargement des sessions...
                   </TableCell>
                 </TableRow>
               )}
@@ -215,7 +215,7 @@ export default function SessionsPage() {
               {!isLoading && selectedProjectId && sessions.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={7} className="px-6 py-8 text-center text-foreground/60">
-                    No active sessions
+                    Aucune session active
                   </TableCell>
                 </TableRow>
               )}
@@ -243,7 +243,7 @@ export default function SessionsPage() {
                   </TableCell>
                   <TableCell className="px-6 py-4 text-sm">
                     <Badge variant={session.active ? 'default' : 'secondary'}>
-                      {session.active ? 'Active' : 'Revoked'}
+                      {session.active ? 'Active' : 'Révoquée'}
                     </Badge>
                   </TableCell>
                   <TableCell className="px-6 py-4 text-right">
@@ -259,7 +259,7 @@ export default function SessionsPage() {
                           onClick={() => void handleRevoke(session.id)}
                           disabled={!session.active}
                         >
-                          Revoke Session
+                          Révoquer la session
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -273,7 +273,7 @@ export default function SessionsPage() {
 
       <div className="flex items-center justify-between">
         <p className="text-sm text-foreground/60">
-          {totalElements} session{totalElements > 1 ? 's' : ''} total
+          {totalElements} session{totalElements > 1 ? 's' : ''} au total
         </p>
         <div className="flex gap-2">
           <Button
@@ -281,22 +281,22 @@ export default function SessionsPage() {
             disabled={currentPage === 0 || isLoading || !selectedProject}
             onClick={() => void loadSessions(currentPage - 1)}
           >
-            Previous
+            Précédent
           </Button>
           <Button
             variant="outline"
             disabled={currentPage >= totalPages - 1 || isLoading || !selectedProject}
             onClick={() => void loadSessions(currentPage + 1)}
           >
-            Next
+            Suivant
           </Button>
         </div>
       </div>
 
       <div className="rounded-lg border border-border bg-background/50 p-4">
         <p className="text-sm text-foreground/60">
-          Active sessions are shown here. You can revoke any session to force the user to
-          re-authenticate.
+          Les sessions actives sont affichées ici. Vous pouvez révoquer n'importe quelle session pour forcer l'utilisateur à
+          se ré-authentifier.
         </p>
       </div>
     </div>

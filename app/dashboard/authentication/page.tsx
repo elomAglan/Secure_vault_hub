@@ -1,87 +1,189 @@
 'use client'
 
+import { ComponentType, useEffect, useMemo, useState } from 'react'
+
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
-import { useState } from 'react'
-import { mockAuthSettings } from '@/lib/mock-data'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Mail, Github, Wand2, Lock } from 'lucide-react'
 
-// 1. Création d'une icône Google personnalisée (Lucide ne la fournit pas)
+import { useProjectStore } from '@/store/projectStore'
+import type { AuthProvider } from '@/types/project'
+import { appToast } from '@/lib/toast'
+
 const GoogleIcon = ({ className }: { className?: string }) => (
-  <svg 
-    className={className} 
-    viewBox="0 0 24 24" 
-    fill="currentColor" 
+  <svg
+    className={className}
+    viewBox="0 0 24 24"
+    fill="currentColor"
     xmlns="http://www.w3.org/2000/svg"
   >
-    <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.908 3.152-1.896 4.14-1.236 1.236-3.156 2.472-7.104 2.472-6.24 0-11.232-5.064-11.232-11.304s4.992-11.304 11.232-11.304c3.42 0 6.036 1.344 7.92 3.144l2.256-2.256C18.42 1.152 15.528 0 12.48 0 5.676 0 0 5.7 0 12.6s5.676 12.6 12.48 12.6c3.684 0 6.468-1.2 8.652-3.48 2.244-2.244 2.952-5.412 2.952-7.944 0-.768-.06-1.5-.18-2.184H12.48z"/>
+    <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.908 3.152-1.896 4.14-1.236 1.236-3.156 2.472-7.104 2.472-6.24 0-11.232-5.064-11.232-11.304s4.992-11.304 11.232-11.304c3.42 0 6.036 1.344 7.92 3.144l2.256-2.256C18.42 1.152 15.528 0 12.48 0 5.676 0 0 5.7 0 12.6s5.676 12.6 12.48 12.6c3.684 0 6.468-1.2 8.652-3.48 2.244-2.244 2.952-5.412 2.952-7.944 0-.768-.06-1.5-.18-2.184H12.48z" />
   </svg>
 )
 
+type AuthMethod = {
+  name: string
+  description: string
+  icon: ComponentType<{ className?: string }>
+  provider?: AuthProvider
+  supported: boolean
+}
+
+const authMethods: AuthMethod[] = [
+  {
+    name: 'Email & Mot de passe',
+    description: 'Permettre aux utilisateurs de s\'inscrire et de se connecter avec un email et un mot de passe',
+    icon: Mail,
+    provider: 'PASSWORD',
+    supported: true,
+  },
+  {
+    name: 'Google OAuth',
+    description: 'Permettre aux utilisateurs de se connecter via leur compte Google',
+    icon: GoogleIcon,
+    provider: 'GOOGLE',
+    supported: true,
+  },
+  {
+    name: 'GitHub OAuth',
+    description: 'Permettre aux utilisateurs de se connecter via leur compte GitHub',
+    icon: Github,
+    provider: 'GITHUB',
+    supported: true,
+  },
+  {
+    name: 'Magic Links',
+    description: 'Envoyer des liens de connexion magiques sans mot de passe par email',
+    icon: Wand2,
+    supported: false,
+  },
+  {
+    name: 'Authentification à deux facteurs',
+    description: 'Exiger un second facteur pour vérifier l\'identité de l\'utilisateur',
+    icon: Lock,
+    supported: false,
+  },
+]
+
+const isAuthProvider = (value: string): value is AuthProvider =>
+  value === 'PASSWORD' || value === 'GOOGLE' || value === 'GITHUB'
+
 export default function AuthenticationPage() {
-  const [settings, setSettings] = useState(mockAuthSettings)
+  const {
+    projects,
+    fetchProjects,
+    updateProject,
+    isLoading,
+    error,
+  } = useProjectStore()
 
-  // 2. Définition des méthodes avec 'as const' pour aider TypeScript
-  const authMethods = [
-    {
-      name: 'Email & Password',
-      description: 'Allow users to sign up and log in with email and password',
-      key: 'emailPassword' as const,
-      icon: Mail,
-    },
-    {
-      name: 'Google OAuth',
-      description: 'Let users sign in using their Google account',
-      key: 'googleOAuth' as const,
-      icon: GoogleIcon, // Utilisation de notre icône personnalisée
-    },
-    {
-      name: 'GitHub OAuth',
-      description: 'Let users sign in using their GitHub account',
-      key: 'githubOAuth' as const,
-      icon: Github,
-    },
-    {
-      name: 'Magic Links',
-      description: 'Send passwordless magic links via email',
-      key: 'magicLinks' as const,
-      icon: Wand2,
-    },
-    {
-      name: 'Two-Factor Authentication',
-      description: 'Require a second factor to verify identity',
-      key: 'twoFactor' as const,
-      icon: Lock,
-    },
-  ]
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('')
+  const [providers, setProviders] = useState<AuthProvider[]>(['PASSWORD'])
+  const [isSaving, setIsSaving] = useState(false)
 
-  const toggleSetting = (key: keyof typeof mockAuthSettings) => {
-    setSettings((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }))
+  useEffect(() => {
+    void fetchProjects()
+  }, [fetchProjects])
+
+  useEffect(() => {
+    if (!projects.length) return
+    if (!selectedProjectId) setSelectedProjectId(String(projects[0].id))
+  }, [projects, selectedProjectId])
+
+  const selectedProject = useMemo(
+    () => projects.find((p) => String(p.id) === selectedProjectId),
+    [projects, selectedProjectId]
+  )
+
+  useEffect(() => {
+    if (!selectedProject) return
+
+    const projectProviders = selectedProject.authProviders.filter(isAuthProvider)
+    const nextProviders: AuthProvider[] = projectProviders.includes('PASSWORD')
+      ? projectProviders
+      : ['PASSWORD', ...projectProviders]
+
+    setProviders(nextProviders)
+  }, [selectedProject])
+
+  const toggleProvider = (provider: AuthProvider) => {
+    if (provider === 'PASSWORD') return
+
+    setProviders((prev) =>
+      prev.includes(provider)
+        ? prev.filter((p) => p !== provider)
+        : [...prev, provider]
+    )
+  }
+
+  const handleSave = async () => {
+    if (!selectedProject) return
+
+    setIsSaving(true)
+    try {
+      await updateProject(selectedProject.id, {
+        name: selectedProject.name,
+        authProviders: providers,
+        theme: selectedProject.theme,
+        primaryColor: selectedProject.primaryColor,
+      })
+      appToast.success('Paramètres d\'authentification mis à jour')
+    } catch {
+      appToast.error('Échec de la mise à jour des paramètres')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
     <div className="max-w-3xl space-y-8">
       <div>
-        <h1 className="text-3xl font-bold">Authentication Settings</h1>
+        <h1 className="text-3xl font-bold">Paramètres d'Authentification</h1>
         <p className="mt-2 text-foreground/60">
-          Configure which authentication methods are available for your application
+          Configurez les méthodes d'authentification disponibles pour votre application
         </p>
       </div>
 
-      {/* Auth Methods */}
+      <Card className="border border-border p-6">
+        <Label className="mb-2 block">Projet</Label>
+        <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+          <SelectTrigger className="max-w-md">
+            <SelectValue placeholder="Sélectionnez un projet" />
+          </SelectTrigger>
+          <SelectContent>
+            {projects.map((project) => (
+              <SelectItem key={project.id} value={String(project.id)}>
+                {project.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Card>
+
+      {error && (
+        <div className="bg-red-50 border border-red-100 text-red-600 text-sm p-4 rounded-xl">
+          {error}
+        </div>
+      )}
+
       <div className="space-y-4">
         {authMethods.map((method) => {
           const Icon = method.icon
-          const isEnabled = settings[method.key]
+          const isEnabled = method.provider ? providers.includes(method.provider) : false
+          const isPasswordMethod = method.provider === 'PASSWORD'
 
           return (
-            <Card key={method.key} className="border border-border p-6">
+            <Card key={method.name} className="border border-border p-6">
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-4">
                   <Icon className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
@@ -91,17 +193,21 @@ export default function AuthenticationPage() {
                       {method.description}
                     </p>
                     <div className="mt-2">
-                      {isEnabled ? (
-                        <Badge>Enabled</Badge>
+                      {!method.supported ? (
+                        <Badge variant="secondary">Service non intégré</Badge>
+                      ) : isEnabled ? (
+                        <Badge>Activé</Badge>
                       ) : (
-                        <Badge variant="secondary">Disabled</Badge>
+                        <Badge variant="secondary">Désactivé</Badge>
                       )}
                     </div>
                   </div>
                 </div>
+
                 <Switch
                   checked={isEnabled}
-                  onCheckedChange={() => toggleSetting(method.key)}
+                  onCheckedChange={() => method.provider && toggleProvider(method.provider)}
+                  disabled={!method.supported || isPasswordMethod || !selectedProject || isLoading || isSaving}
                 />
               </div>
             </Card>
@@ -109,77 +215,15 @@ export default function AuthenticationPage() {
         })}
       </div>
 
-      {/* Security Options */}
-      <Card className="border border-border p-6">
-        <h2 className="mb-6 text-xl font-semibold">Security Options</h2>
+      <div className="rounded-lg border border-border bg-background/50 p-4">
+        <p className="text-sm text-foreground/60">
+          Seules les méthodes ayant un service backend disponible sont connectées dans cette page.
+        </p>
+      </div>
 
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium">Require Email Verification</h3>
-              <p className="text-sm text-foreground/60 mt-1">
-                Verify email addresses before users can log in
-              </p>
-            </div>
-            <Switch defaultChecked />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium">Password Requirements</h3>
-              <p className="text-sm text-foreground/60 mt-1">
-                Enforce strong password policies
-              </p>
-            </div>
-            <Switch defaultChecked />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium">Account Lockout</h3>
-              <p className="text-sm text-foreground/60 mt-1">
-                Lock accounts after failed login attempts
-              </p>
-            </div>
-            <Switch defaultChecked />
-          </div>
-        </div>
-      </Card>
-
-      {/* Session Management */}
-      <Card className="border border-border p-6">
-        <h2 className="mb-6 text-xl font-semibold">Session Management</h2>
-
-        <div className="space-y-6">
-          <div>
-            <Label className="block text-sm font-medium mb-2">Session Duration</Label>
-            <select 
-              className="w-full px-3 py-2 border border-border rounded-md bg-background"
-              defaultValue="1 hour"
-            >
-              <option value="30 minutes">30 minutes</option>
-              <option value="1 hour">1 hour</option>
-              <option value="2 hours">2 hours</option>
-              <option value="24 hours">24 hours</option>
-            </select>
-          </div>
-
-          <div>
-            <Label className="block text-sm font-medium mb-2">Refresh Token Expiration</Label>
-            <select 
-              className="w-full px-3 py-2 border border-border rounded-md bg-background"
-              defaultValue="30 days"
-            >
-              <option value="7 days">7 days</option>
-              <option value="30 days">30 days</option>
-              <option value="90 days">90 days</option>
-              <option value="never">Never expire</option>
-            </select>
-          </div>
-        </div>
-      </Card>
-
-      <Button>Save Changes</Button>
+      <Button onClick={() => void handleSave()} disabled={!selectedProject || isLoading || isSaving}>
+        {isSaving ? 'Enregistrement...' : 'Enregistrer les modifications'}
+      </Button>
     </div>
   )
 }
