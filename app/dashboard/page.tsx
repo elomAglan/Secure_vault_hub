@@ -35,9 +35,9 @@ export default function DashboardPage() {
       const data = await dashboardService.getStats()
       setStats(data)
     } catch (err: any) {
-      const message = err?.response?.data?.message || 'Erreur lors du chargement du dashboard'
+      const message = err?.response?.data?.message || 'Erreur lors du chargement du tableau de bord'
       setError(message)
-      appToast.error('Chargement echoue', message)
+      appToast.error('Échec du chargement', message)
     } finally {
       setIsLoading(false)
     }
@@ -52,25 +52,25 @@ export default function DashboardPage() {
 
     return [
       {
-        label: 'Total Users',
+        label: 'Utilisateurs Totaux',
         value: stats.totalUsers.toLocaleString(),
         icon: Users,
         color: 'text-blue-500',
       },
       {
-        label: 'Active Sessions',
+        label: 'Sessions Actives',
         value: stats.activeSessions.toLocaleString(),
         icon: Activity,
         color: 'text-green-500',
       },
       {
-        label: 'Total Logins',
+        label: 'Connexions Totales',
         value: stats.totalLogins.toLocaleString(),
         icon: LogIn,
         color: 'text-purple-500',
       },
       {
-        label: 'Total Projects',
+        label: 'Projets Totaux',
         value: stats.totalProjects.toLocaleString(),
         icon: FolderKanban,
         color: 'text-orange-500',
@@ -95,12 +95,12 @@ export default function DashboardPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="mt-2 text-foreground/60">Welcome back! Here&apos;s your authentication analytics.</p>
+          <h1 className="text-3xl font-bold">Tableau de Bord</h1>
+          <p className="mt-2 text-foreground/60">Ravi de vous revoir ! Voici vos analyses d'authentification.</p>
         </div>
         <Button variant="outline" onClick={() => void loadStats()} disabled={isLoading}>
           <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-          Refresh
+          Actualiser
         </Button>
       </div>
 
@@ -138,15 +138,16 @@ export default function DashboardPage() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="border border-border p-6">
-          <h2 className="mb-4 font-semibold">User Growth</h2>
+          <h2 className="mb-4 font-semibold">Croissance des Utilisateurs</h2>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={stats?.userGrowth ?? []}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis dataKey="month" stroke="var(--foreground)" />
               <YAxis stroke="var(--foreground)" />
-              <Tooltip />
+              <Tooltip labelFormatter={(label) => `Mois : ${label}`} />
               <Legend />
               <Line
+                name="Utilisateurs"
                 type="monotone"
                 dataKey="users"
                 stroke="var(--primary)"
@@ -158,15 +159,16 @@ export default function DashboardPage() {
         </Card>
 
         <Card className="border border-border p-6">
-          <h2 className="mb-4 font-semibold">Login Activity</h2>
+          <h2 className="mb-4 font-semibold">Activité de Connexion</h2>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={stats?.loginActivity ?? []}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis dataKey="date" stroke="var(--foreground)" />
               <YAxis stroke="var(--foreground)" />
-              <Tooltip />
+              <Tooltip labelFormatter={(label) => `Date : ${label}`} />
               <Legend />
               <Bar
+                name="Connexions"
                 dataKey="logins"
                 fill="var(--primary)"
                 radius={[8, 8, 0, 0]}
@@ -177,10 +179,10 @@ export default function DashboardPage() {
       </div>
 
       <Card className="border border-border p-6">
-        <h2 className="mb-4 font-semibold">Recent Login Activity</h2>
+        <h2 className="mb-4 font-semibold">Activité de Connexion Récente</h2>
         <div className="space-y-4">
           {!isLoading && recentLoginActivity.length === 0 && (
-            <p className="text-sm text-foreground/60">No recent activity</p>
+            <p className="text-sm text-foreground/60">Aucune activité récente</p>
           )}
 
           {isLoading && (
@@ -198,10 +200,10 @@ export default function DashboardPage() {
             >
               <div className="flex-1">
                 <p className="font-medium text-sm">login.activity</p>
-                <p className="text-xs text-foreground/60 mt-1">{item.logins} login(s)</p>
+                <p className="text-xs text-foreground/60 mt-1">{item.logins} connexion(s)</p>
                 <p className="text-xs text-foreground/40 mt-1">{item.date}</p>
               </div>
-              <Badge variant="outline">system</Badge>
+              <Badge variant="outline">système</Badge>
             </div>
           ))}
         </div>

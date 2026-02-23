@@ -53,7 +53,7 @@ export default function SettingsPage() {
         setSupportEmail(settings.supportEmail ?? '')
         setDescription(settings.description ?? '')
       } catch (err: any) {
-        const message = err?.response?.data?.message || 'Erreur lors du chargement des settings'
+        const message = err?.response?.data?.message || 'Erreur lors du chargement des paramètres'
         setError(message)
       } finally {
         setIsLoading(false)
@@ -79,11 +79,11 @@ export default function SettingsPage() {
       setWebsite(updated.website ?? '')
       setSupportEmail(updated.supportEmail ?? '')
       setDescription(updated.description ?? '')
-      appToast.success('Settings enregistres')
+      appToast.success('Paramètres enregistrés')
     } catch (err: any) {
       const message = err?.response?.data?.message || 'Erreur lors de la sauvegarde'
       setError(message)
-      appToast.error('Sauvegarde echouee', message)
+      appToast.error('Sauvegarde échouée', message)
     } finally {
       setIsSaving(false)
     }
@@ -96,13 +96,13 @@ export default function SettingsPage() {
     try {
       await profileService.deleteAccount()
       clearTokens()
-      appToast.success('Compte supprime')
+      appToast.success('Compte supprimé avec succès')
       setIsDeleteDialogOpen(false)
       router.replace('/auth/login')
     } catch (err: any) {
       const message = err?.response?.data?.message || 'Erreur lors de la suppression du compte'
       setError(message)
-      appToast.error('Suppression echouee', message)
+      appToast.error('Suppression échouée', message)
     } finally {
       setIsDeleting(false)
     }
@@ -119,8 +119,8 @@ export default function SettingsPage() {
   return (
     <div className="max-w-3xl space-y-8 pb-10">
       <div>
-        <h1 className="text-3xl font-bold">Settings</h1>
-        <p className="mt-2 text-foreground/60">Manage your account and organization settings</p>
+        <h1 className="text-3xl font-bold">Paramètres</h1>
+        <p className="mt-2 text-foreground/60">Gérez votre compte et les paramètres de votre organisation</p>
       </div>
 
       {error && (
@@ -130,16 +130,16 @@ export default function SettingsPage() {
       )}
 
       <Card className="border-none bg-background/50 p-6 shadow-sm">
-        <h2 className="mb-6 text-xl font-semibold">Organization Information</h2>
+        <h2 className="mb-6 text-xl font-semibold">Informations sur l'organisation</h2>
 
         <div className="space-y-6">
           <div>
             <Label htmlFor="company" className="mb-2 block text-sm font-medium">
-              Company Name
+              Nom de l'entreprise
             </Label>
             <Input
               id="company"
-              placeholder="Your Company"
+              placeholder="Votre entreprise"
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
               disabled={isLoading || isSaving}
@@ -148,12 +148,12 @@ export default function SettingsPage() {
 
           <div>
             <Label htmlFor="website" className="mb-2 block text-sm font-medium">
-              Website
+              Site Web
             </Label>
             <Input
               id="website"
               type="url"
-              placeholder="https://example.com"
+              placeholder="https://exemple.com"
               value={website}
               onChange={(e) => setWebsite(e.target.value)}
               disabled={isLoading || isSaving}
@@ -162,12 +162,12 @@ export default function SettingsPage() {
 
           <div>
             <Label htmlFor="support-email" className="mb-2 block text-sm font-medium">
-              Support Email
+              Email de support
             </Label>
             <Input
               id="support-email"
               type="email"
-              placeholder="support@example.com"
+              placeholder="support@exemple.com"
               value={supportEmail}
               onChange={(e) => setSupportEmail(e.target.value)}
               disabled={isLoading || isSaving}
@@ -180,7 +180,7 @@ export default function SettingsPage() {
             </Label>
             <Textarea
               id="description"
-              placeholder="Tell us about your organization..."
+              placeholder="Parlez-nous de votre organisation..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
@@ -189,7 +189,7 @@ export default function SettingsPage() {
           </div>
 
           <Button className="w-fit" onClick={() => void handleSave()} disabled={isLoading || isSaving}>
-            {isSaving ? 'Saving...' : 'Save Changes'}
+            {isSaving ? 'Enregistrement...' : 'Enregistrer les modifications'}
           </Button>
         </div>
       </Card>
@@ -200,16 +200,16 @@ export default function SettingsPage() {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-medium">Login Alerts</h3>
-              <p className="text-sm text-foreground/60 mt-1">Get notified of unusual login activity</p>
+              <h3 className="font-medium">Alertes de connexion</h3>
+              <p className="text-sm text-foreground/60 mt-1">Soyez notifié en cas d'activité de connexion inhabituelle</p>
             </div>
             <Switch defaultChecked />
           </div>
 
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-medium">Billing Notifications</h3>
-              <p className="text-sm text-foreground/60 mt-1">Get notified about billing events</p>
+              <h3 className="font-medium">Notifications de facturation</h3>
+              <p className="text-sm text-foreground/60 mt-1">Recevez des alertes concernant vos factures et abonnements</p>
             </div>
             <Switch defaultChecked />
           </div>
@@ -217,68 +217,68 @@ export default function SettingsPage() {
       </Card>
 
       <Card className="border-none bg-background/50 p-6 shadow-sm">
-        <h2 className="mb-6 text-xl font-semibold">Preferences</h2>
+        <h2 className="mb-6 text-xl font-semibold">Préférences</h2>
 
         <div className="space-y-6">
           <div>
             <Label htmlFor="timezone" className="mb-2 block text-sm font-medium">
-              Timezone
+              Fuseau horaire
             </Label>
             <select
               id="timezone"
               defaultValue="EST"
-              className="w-full px-3 py-2 border border-input rounded-md bg-background focus:ring-2 focus:ring-primary focus:outline-none"
+              className="w-full px-3 py-2 border border-input rounded-md bg-background focus:ring-2 focus:ring-primary focus:outline-none text-sm"
             >
-              <option value="UTC">UTC (Coordinated Universal Time)</option>
-              <option value="EST">EST (Eastern Standard Time)</option>
-              <option value="CST">CST (Central Standard Time)</option>
-              <option value="PST">PST (Pacific Standard Time)</option>
+              <option value="UTC">UTC (Temps Universel Coordonné)</option>
+              <option value="EST">EST (Heure Normale de l'Est)</option>
+              <option value="CST">CST (Heure Normale du Centre)</option>
+              <option value="PST">PST (Heure Normale du Pacifique)</option>
             </select>
           </div>
 
           <div>
             <Label htmlFor="language" className="mb-2 block text-sm font-medium">
-              Language
+              Langue
             </Label>
             <select
               id="language"
-              defaultValue="English"
-              className="w-full px-3 py-2 border border-input rounded-md bg-background focus:ring-2 focus:ring-primary focus:outline-none"
+              defaultValue="French"
+              className="w-full px-3 py-2 border border-input rounded-md bg-background focus:ring-2 focus:ring-primary focus:outline-none text-sm"
             >
-              <option value="English">English</option>
-              <option value="Spanish">Spanish</option>
-              <option value="French">French</option>
-              <option value="German">German</option>
+              <option value="English">Anglais</option>
+              <option value="Spanish">Espagnol</option>
+              <option value="French">Français</option>
+              <option value="German">Allemand</option>
             </select>
           </div>
         </div>
       </Card>
 
-      <Card className="border-none bg-destructive/5 p-6 shadow-sm">
-        <h2 className="mb-4 text-xl font-semibold text-destructive">Danger Zone</h2>
+      <Card className="border-none bg-destructive/5 p-6 shadow-sm border border-destructive/20">
+        <h2 className="mb-4 text-xl font-semibold text-destructive">Zone de danger</h2>
         <p className="mb-6 text-sm text-foreground/60">
-          These actions are irreversible. Please proceed with caution.
+          Ces actions sont irréversibles. Veuillez procéder avec prudence.
         </p>
         <div className="flex flex-col sm:flex-row gap-3">
           <Button variant="outline" className="flex-1">
-            Download Account Data
+            Télécharger les données du compte
           </Button>
           <AlertDialog open={isDeleteDialogOpen} onOpenChange={openDeleteDialog}>
             <AlertDialogTrigger asChild>
               <Button variant="destructive" className="flex-1" disabled={isDeleting}>
-                {isDeleting ? 'Deleting...' : 'Delete Account'}
+                {isDeleting ? 'Suppression...' : 'Supprimer le compte'}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Delete account permanently?</AlertDialogTitle>
+                <AlertDialogTitle>Supprimer le compte définitivement ?</AlertDialogTitle>
                 {deleteStep === 1 ? (
                   <AlertDialogDescription>
-                    This action is irreversible. Your profile data and related projects will be permanently deleted.
+                    Cette action est irréversible. Vos données de profil et tous les projets associés seront définitivement effacés.
                   </AlertDialogDescription>
                 ) : (
                   <AlertDialogDescription>
-                    Final confirmation: type <strong>DELETE</strong> to permanently remove your account.
+                    Confirmation finale : tapez <strong>SUPPRIMER</strong> pour confirmer la suppression définitive de votre compte.
                   </AlertDialogDescription>
                 )}
               </AlertDialogHeader>
@@ -287,13 +287,14 @@ export default function SettingsPage() {
                 <Input
                   value={deleteConfirmText}
                   onChange={(e) => setDeleteConfirmText(e.target.value)}
-                  placeholder="Type DELETE"
+                  placeholder="Tapez SUPPRIMER"
                   disabled={isDeleting}
+                  className="uppercase"
                 />
               )}
 
               <AlertDialogFooter>
-                <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                <AlertDialogCancel disabled={isDeleting}>Annuler</AlertDialogCancel>
                 {deleteStep === 1 ? (
                   <AlertDialogAction
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -303,18 +304,18 @@ export default function SettingsPage() {
                       setDeleteStep(2)
                     }}
                   >
-                    Continue
+                    Continuer
                   </AlertDialogAction>
                 ) : (
                   <AlertDialogAction
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    disabled={isDeleting || deleteConfirmText !== 'DELETE'}
+                    disabled={isDeleting || deleteConfirmText !== 'SUPPRIMER'}
                     onClick={(event) => {
                       event.preventDefault()
                       void handleDeleteAccount()
                     }}
                   >
-                    {isDeleting ? 'Deleting...' : 'Delete permanently'}
+                    {isDeleting ? 'Suppression...' : 'Supprimer définitivement'}
                   </AlertDialogAction>
                 )}
               </AlertDialogFooter>

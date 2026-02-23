@@ -83,7 +83,7 @@ export default function TeamPage() {
       setMembers(membersData)
       setInvitations(invitationsData)
     } catch {
-      appToast.error('Erreur lors du chargement de l equipe')
+      appToast.error('Erreur lors du chargement de l\'équipe')
     } finally {
       setIsLoading(false)
     }
@@ -102,12 +102,12 @@ export default function TeamPage() {
     setIsInviting(true)
     try {
       await teamService.invite(projectId, { email })
-      appToast.success('Invitation envoyee')
+      appToast.success('Invitation envoyée')
       setInviteEmail('')
       setIsInviteDialogOpen(false)
       await loadTeamData(projectId)
     } catch {
-      appToast.error('Erreur lors de l invitation')
+      appToast.error('Erreur lors de l\'invitation')
     } finally {
       setIsInviting(false)
     }
@@ -119,46 +119,53 @@ export default function TeamPage() {
 
     try {
       await teamService.cancelInvitation(projectId, invitationId)
-      appToast.success('Invitation annulee')
+      appToast.success('Invitation annulée')
       await loadTeamData(projectId)
     } catch {
-      appToast.error('Erreur lors de l annulation')
+      appToast.error('Erreur lors de l\'annulation')
     }
   }
 
   const getInitials = (firstName: string, lastName: string) =>
     `${firstName?.[0] ?? ''}${lastName?.[0] ?? ''}`.toUpperCase()
 
-  const formatRole = (role: string) => role.toLowerCase()
+  const formatRole = (role: string) => {
+    const roles: Record<string, string> = {
+      'admin': 'Administrateur',
+      'owner': 'Propriétaire',
+      'member': 'Membre'
+    }
+    return roles[role.toLowerCase()] || role
+  }
 
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Team</h1>
-          <p className="mt-2 text-foreground/60">Manage team members and permissions</p>
+          <h1 className="text-3xl font-bold">Équipe</h1>
+          <p className="mt-2 text-foreground/60">Gérez les membres de l'équipe et leurs permissions</p>
         </div>
         {mounted ? (
           <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
             <DialogTrigger asChild>
               <Button disabled={!selectedProjectId}>
                 <Plus className="mr-2 h-4 w-4" />
-                Invite Member
+                Inviter un membre
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Invite Team Member</DialogTitle>
+                <DialogTitle>Inviter un membre dans l'équipe</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="email" className="mb-2 block text-sm font-medium">
-                    Email Address
+                    Adresse Email
                   </Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="member@example.com"
+                    placeholder="membre@exemple.com"
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
                     disabled={isInviting}
@@ -166,10 +173,10 @@ export default function TeamPage() {
                 </div>
                 <div className="flex gap-2 justify-end">
                   <Button variant="outline" onClick={() => setIsInviteDialogOpen(false)} disabled={isInviting}>
-                    Cancel
+                    Annuler
                   </Button>
                   <Button onClick={() => void handleInvite()} disabled={isInviting}>
-                    {isInviting ? 'Sending...' : 'Send Invite'}
+                    {isInviting ? 'Envoi...' : 'Envoyer l\'invitation'}
                   </Button>
                 </div>
               </div>
@@ -178,17 +185,17 @@ export default function TeamPage() {
         ) : (
           <Button disabled>
             <Plus className="mr-2 h-4 w-4" />
-            Invite Member
+            Inviter un membre
           </Button>
         )}
       </div>
 
       <Card className="border border-border p-6">
-        <Label className="mb-2 block">Project</Label>
+        <Label className="mb-2 block">Projet</Label>
         {mounted ? (
           <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
             <SelectTrigger className="max-w-md">
-              <SelectValue placeholder="Select a project" />
+              <SelectValue placeholder="Sélectionnez un projet" />
             </SelectTrigger>
             <SelectContent>
               {projects.map((project) => (
@@ -200,7 +207,7 @@ export default function TeamPage() {
           </Select>
         ) : (
           <div className="h-10 max-w-md rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground">
-            Select a project
+            Sélectionnez un projet
           </div>
         )}
       </Card>
@@ -210,10 +217,10 @@ export default function TeamPage() {
           <Table>
             <TableHeader>
               <TableRow className="border-b border-border hover:bg-transparent">
-                <TableHead className="px-6 py-4 font-semibold">Member</TableHead>
+                <TableHead className="px-6 py-4 font-semibold">Membre</TableHead>
                 <TableHead className="px-6 py-4 font-semibold">Email</TableHead>
-                <TableHead className="px-6 py-4 font-semibold">Role</TableHead>
-                <TableHead className="px-6 py-4 font-semibold">Joined</TableHead>
+                <TableHead className="px-6 py-4 font-semibold">Rôle</TableHead>
+                <TableHead className="px-6 py-4 font-semibold">Rejoint le</TableHead>
                 <TableHead className="px-6 py-4 font-semibold text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -221,7 +228,7 @@ export default function TeamPage() {
               {!selectedProjectId && (
                 <TableRow>
                   <TableCell colSpan={5} className="px-6 py-8 text-center text-foreground/60">
-                    Select a project to view team members.
+                    Sélectionnez un projet pour voir les membres de l'équipe.
                   </TableCell>
                 </TableRow>
               )}
@@ -229,7 +236,7 @@ export default function TeamPage() {
               {isLoading && selectedProjectId && (
                 <TableRow>
                   <TableCell colSpan={5} className="px-6 py-8 text-center text-foreground/60">
-                    Loading members...
+                    Chargement des membres...
                   </TableCell>
                 </TableRow>
               )}
@@ -237,7 +244,7 @@ export default function TeamPage() {
               {!isLoading && selectedProjectId && members.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={5} className="px-6 py-8 text-center text-foreground/60">
-                    No team members yet.
+                    Aucun membre dans l'équipe pour le moment.
                   </TableCell>
                 </TableRow>
               )}
@@ -274,9 +281,9 @@ export default function TeamPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem disabled>Change Role (not available)</DropdownMenuItem>
+                        <DropdownMenuItem disabled>Modifier le rôle (indisponible)</DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive" disabled>
-                          Remove Member (not available)
+                          Retirer le membre (indisponible)
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -289,14 +296,14 @@ export default function TeamPage() {
       </Card>
 
       <Card className="border border-border p-6">
-        <h2 className="mb-4 font-semibold">Pending Invitations</h2>
+        <h2 className="mb-4 font-semibold">Invitations en attente</h2>
 
         {isLoading && (
-          <p className="text-sm text-foreground/60">Loading invitations...</p>
+          <p className="text-sm text-foreground/60">Chargement des invitations...</p>
         )}
 
         {!isLoading && invitations.length === 0 && (
-          <p className="text-sm text-foreground/60">No pending invitations.</p>
+          <p className="text-sm text-foreground/60">Aucune invitation en attente.</p>
         )}
 
         <div className="space-y-3">
@@ -307,7 +314,7 @@ export default function TeamPage() {
                 <div>
                   <p className="text-sm font-medium">{invitation.email}</p>
                   <p className="text-xs text-foreground/60">
-                    Invited {new Date(invitation.createdAt).toLocaleDateString('fr-FR')}
+                    Invité le {new Date(invitation.createdAt).toLocaleDateString('fr-FR')}
                   </p>
                 </div>
               </div>
@@ -316,7 +323,7 @@ export default function TeamPage() {
                 size="sm"
                 onClick={() => void handleCancelInvitation(invitation.id)}
               >
-                Cancel
+                Annuler
               </Button>
             </div>
           ))}
