@@ -1,25 +1,31 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Search, Menu } from 'lucide-react'
 import { NotificationBell } from '@/components/shared/notification-bell'
 import { UserMenu } from '@/components/shared/user-menu'
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { Sidebar } from './sidebar'
 
 import { authApi } from '@/lib/auth'
 
 export function Navbar() {
   const router = useRouter()
+  const pathname = usePathname()
   const [mounted, setMounted] = useState(false)
+  const [sheetOpen, setSheetOpen] = useState(false)
 
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  useEffect(() => {
+    setSheetOpen(false)
+  }, [pathname])
 
   const handleLogout = async () => {
     try {
@@ -35,14 +41,17 @@ export function Navbar() {
     <header className="border-b border-border bg-background sticky top-0 z-40">
       <div className="flex h-16 items-center justify-between px-6">
         {mounted ? (
-          <Sheet>
+          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild className="lg:hidden">
               <Button variant="ghost" size="icon">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0">
-              <Sidebar />
+              <SheetHeader className="sr-only">
+                <SheetTitle>Navigation menu</SheetTitle>
+              </SheetHeader>
+              <Sidebar mobile onNavigate={() => setSheetOpen(false)} />
             </SheetContent>
           </Sheet>
         ) : (
