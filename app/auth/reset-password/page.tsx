@@ -5,27 +5,27 @@ import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Logo } from '@/components/shared/logo'
+import { authService } from '@/app/services/authService'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 import { Check, X, CheckCircle } from 'lucide-react'
 
 export default function ResetPasswordPage() {
+  const searchParams = useSearchParams()
+  const resetToken = searchParams.get('token')?.trim() ?? ''
+
   const [formData, setFormData] = useState({
     password: '',
     confirmPassword: '',
   })
   const [submitted, setSubmitted] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData({ ...formData, [name]: value })
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (formData.password === formData.confirmPassword) {
-      setSubmitted(true)
-    }
   }
 
   const passwordStrength = {
@@ -38,12 +38,44 @@ export default function ResetPasswordPage() {
   const isStrongPassword = Object.values(passwordStrength).every(Boolean)
   const passwordsMatch = formData.password === formData.confirmPassword && formData.password !== ''
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+
+    if (!resetToken) {
+      setError('Reset token is missing. Please use the link from your email.')
+      return
+    }
+
+    if (!isStrongPassword || !passwordsMatch) {
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      await authService.resetPassword(resetToken, formData.password)
+      setSubmitted(true)
+    } catch (err: unknown) {
+      const backendMessage =
+        typeof err === 'object' &&
+        err !== null &&
+        'response' in err &&
+        typeof (err as { response?: { data?: { message?: string } } }).response?.data?.message === 'string'
+          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          : null
+
+      setError(backendMessage ?? 'Unable to reset password. Please request a new reset link.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   if (submitted) {
     return (
       <div className="flex min-h-screen items-center justify-center px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
-            <div className="flex justify-center mb-6">
+            <div className="mb-6 flex justify-center">
               <div className="rounded-full bg-green-100 p-3">
                 <CheckCircle className="h-12 w-12 text-green-600" />
               </div>
@@ -68,13 +100,17 @@ export default function ResetPasswordPage() {
         <div className="text-center">
           <Logo className="justify-center" />
           <h2 className="mt-6 text-3xl font-bold">Set new password</h2>
-          <p className="mt-2 text-foreground/60">
-            Create a strong password for your account
-          </p>
+          <p className="mt-2 text-foreground/60">Create a strong password for your account</p>
         </div>
 
         <Card className="border border-border p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
+            {!resetToken && (
+              <p className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                Invalid or missing reset token. Open the password reset link sent to your email.
+              </p>
+            )}
+
             <div>
               <Label htmlFor="password">New password</Label>
               <Input
@@ -82,12 +118,13 @@ export default function ResetPasswordPage() {
                 name="password"
                 type="password"
                 required
-                placeholder="••••••••"
+                placeholder="********"
                 value={formData.password}
                 onChange={handleChange}
+                disabled={isLoading || !resetToken}
                 className="mt-1"
               />
-              
+
               {formData.password && (
                 <div className="mt-3 space-y-2">
                   <div className="text-xs font-medium">Password strength:</div>
@@ -144,9 +181,10 @@ export default function ResetPasswordPage() {
                 name="confirmPassword"
                 type="password"
                 required
-                placeholder="••••••••"
+                placeholder="********"
                 value={formData.confirmPassword}
                 onChange={handleChange}
+                disabled={isLoading || !resetToken}
                 className="mt-1"
               />
               {formData.confirmPassword && (
@@ -163,12 +201,18 @@ export default function ResetPasswordPage() {
               )}
             </div>
 
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={!isStrongPassword || !passwordsMatch}
+            {error && (
+              <p className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {error}
+              </p>
+            )}
+
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={!isStrongPassword || !passwordsMatch || isLoading || !resetToken}
             >
-              Reset password
+              {isLoading ? 'Resetting password...' : 'Reset password'}
             </Button>
           </form>
         </Card>

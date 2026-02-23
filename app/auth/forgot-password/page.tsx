@@ -9,9 +9,9 @@ import { Label } from '@/components/ui/label'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, CheckCircle, Mail, Send } from 'lucide-react'
+import { authService } from '@/app/services/authService'
 
 export default function ForgotPasswordPage() {
-  // Animation du curseur (Spotlight)
   const mouseX = useMotionValue(0)
   const mouseY = useMotionValue(0)
   const smoothX = useSpring(mouseX, { damping: 25, stiffness: 200 })
@@ -25,14 +25,27 @@ export default function ForgotPasswordPage() {
 
   const [email, setEmail] = useState('')
   const [submitted, setSubmitted] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setSubmitted(true)
+    setError(null)
+    setIsLoading(true)
+    try {
+      await authService.forgotPassword(email)
+      setSubmitted(true)
+    } catch {
+      // On affiche le même message même en cas d'erreur
+      // pour ne pas révéler si l'email existe ou non
+      setSubmitted(true)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
-    <div 
+    <div
       className="relative flex min-h-screen flex-col items-center justify-center bg-[#F9FAFB] px-4 py-12 text-slate-900 overflow-hidden"
       onMouseMove={handleMouseMove}
     >
@@ -48,10 +61,10 @@ export default function ForgotPasswordPage() {
       />
 
       <div className="relative z-10 w-full max-w-md space-y-8">
-        
+
         {/* État : Email envoyé */}
         {submitted ? (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="text-center"
@@ -61,35 +74,42 @@ export default function ForgotPasswordPage() {
                 <CheckCircle className="h-10 w-10 text-green-600" />
               </div>
             </div>
-            <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">Vérifiez vos emails</h2>
+            <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">
+              Vérifiez vos emails
+            </h2>
             <p className="mt-4 text-slate-500 leading-relaxed">
-              Un lien de réinitialisation a été envoyé à :<br />
+              Si un compte existe pour :<br />
               <span className="font-bold text-slate-900 underline decoration-blue-200">{email}</span>
+              <br />un lien de réinitialisation a été envoyé.
             </p>
 
             <Card className="mt-8 border-slate-200/60 bg-white p-6 shadow-xl shadow-slate-200/40">
               <p className="text-xs text-slate-400 mb-6">
                 Vous n'avez rien reçu ? Vérifiez vos spams ou réessayez avec une autre adresse.
               </p>
-              <Button asChild variant="outline" className="w-full border-slate-200 text-slate-600 hover:bg-slate-50 py-6 rounded-xl font-bold">
+              <Button
+                asChild
+                variant="outline"
+                className="w-full border-slate-200 text-slate-600 hover:bg-slate-50 py-6 rounded-xl font-bold"
+              >
                 <Link href="/auth/login">Retour à la connexion</Link>
               </Button>
             </Card>
           </motion.div>
         ) : (
-          /* État : Formulaire initial */
+          /* État : Formulaire */
           <>
             <div className="text-center">
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="flex justify-center mb-6"
               >
                 <div className="relative h-16 w-16 p-3 bg-white rounded-2xl shadow-sm border border-slate-200/60">
-                  <Image 
-                    src="/bouclier.png" 
-                    alt="SecureVault Logo" 
-                    fill 
+                  <Image
+                    src="/bouclier.png"
+                    alt="SecureVault Logo"
+                    fill
                     className="object-contain p-2"
                   />
                 </div>
@@ -110,7 +130,10 @@ export default function ForgotPasswordPage() {
               <Card className="border-slate-200/60 bg-white p-8 shadow-xl shadow-slate-200/40">
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="text-slate-700 font-semibold text-[11px] uppercase tracking-widest">
+                    <Label
+                      htmlFor="email"
+                      className="text-slate-700 font-semibold text-[11px] uppercase tracking-widest"
+                    >
                       Email Professionnel
                     </Label>
                     <div className="relative">
@@ -122,22 +145,33 @@ export default function ForgotPasswordPage() {
                         placeholder="nom@entreprise.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
+                        disabled={isLoading}
                         className="rounded-lg border-slate-200 bg-slate-50/50 pl-10 focus:border-blue-500 focus:ring-blue-500 transition-all"
                       />
                     </div>
                   </div>
 
-                  <Button type="submit" className="w-full bg-blue-600 py-6 text-white hover:bg-blue-700 rounded-xl font-bold transition-all shadow-lg shadow-blue-100">
-                    Envoyer le lien
-                    <Send className="ml-2 h-4 w-4" />
+                  {error && (
+                    <p className="text-sm text-red-500 bg-red-50 p-3 rounded-xl border border-red-100">
+                      {error}
+                    </p>
+                  )}
+
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full bg-blue-600 py-6 text-white hover:bg-blue-700 rounded-xl font-bold transition-all shadow-lg shadow-blue-100"
+                  >
+                    {isLoading ? 'Envoi en cours...' : 'Envoyer le lien'}
+                    {!isLoading && <Send className="ml-2 h-4 w-4" />}
                   </Button>
                 </form>
               </Card>
             </motion.div>
 
             <div className="text-center">
-              <Link 
-                href="/auth/login" 
+              <Link
+                href="/auth/login"
                 className="inline-flex items-center justify-center gap-2 text-sm font-bold text-slate-400 hover:text-slate-900 transition-colors"
               >
                 <ArrowLeft className="h-4 w-4" />
