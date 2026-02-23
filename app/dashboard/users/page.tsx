@@ -32,7 +32,7 @@ export default function UsersPage() {
 
   const [selectedProjectId, setSelectedProjectId] = useState<string>('')
   const [users, setUsers] = useState<ProjectUserItem[]>([])
-  const [totalElements, setTotalElements] = useState(0)
+  const [totalElements, setTotalElements] = useState(0) 
   const [totalPages, setTotalPages] = useState(0)
   const [currentPage, setCurrentPage] = useState(0)
   const [searchTerm, setSearchTerm] = useState('')
