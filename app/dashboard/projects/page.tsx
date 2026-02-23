@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useProjectStore } from '@/store/projectStore'
 import type { Project } from '@/app/services/projectService'
+import EditProjectModal from '@/components/Projets/EditProjectModal'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -263,95 +264,12 @@ export default function ProjectsPage() {
         </div>
       )}
 
-      <Dialog open={!!projectToView} onOpenChange={(open) => !open && closeSettingsDialog()}>
-        <DialogContent className="sm:max-w-4xl max-h-[85vh] overflow-hidden">
-          <DialogHeader>
-            <DialogTitle>Parametres du projet</DialogTitle>
-            <DialogDescription>
-              Apercu des caracteristiques du projet. La modification n&apos;est pas disponible pour le moment.
-            </DialogDescription>
-          </DialogHeader>
-
-          {projectToView && (
-            <div className="max-h-[68vh] overflow-y-auto pr-2">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-lg border border-border p-4 space-y-3">
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-sm text-muted-foreground">Nom</span>
-                  <span className="text-sm font-medium">{projectToView.name}</span>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-sm text-muted-foreground">ID</span>
-                  <span className="text-sm font-mono">{projectToView.id}</span>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-sm text-muted-foreground">Date de creation</span>
-                  <span className="text-sm">{new Date(projectToView.createdAt).toLocaleString('fr-FR')}</span>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-sm text-muted-foreground">Theme</span>
-                  <span className="text-sm font-medium">{projectToView.theme}</span>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-sm text-muted-foreground">Couleur primaire</span>
-                  <span className="inline-flex items-center gap-2 text-sm font-mono">
-                    <span className="h-3 w-3 rounded-full border" style={{ backgroundColor: projectToView.primaryColor }} />
-                    {projectToView.primaryColor}
-                  </span>
-                </div>
-              </div>
-
-                <div className="space-y-4">
-                  <div className="rounded-lg border border-border p-4 space-y-3">
-                    <p className="text-sm text-muted-foreground">Methodes d&apos;authentification</p>
-                    <div className="flex flex-wrap gap-2">
-                      {projectToView.authProviders.map((provider) => (
-                        <Badge key={provider} variant="outline">
-                          {provider}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="rounded-lg border border-border p-4 space-y-3">
-                    <p className="text-sm text-muted-foreground">Cles du projet</p>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between gap-2 rounded-md bg-muted/50 px-3 py-2">
-                        <span className="text-xs font-mono truncate">{projectToView.publicKey}</span>
-                        <button
-                          onClick={() => copyToClipboard(projectToView.publicKey, `settings-pk-${projectToView.id}`)}
-                          className="ml-2 flex-shrink-0"
-                        >
-                          {copiedId === `settings-pk-${projectToView.id}`
-                            ? <Check className="h-3 w-3 text-green-500" />
-                            : <Copy className="h-3 w-3 text-slate-500 hover:text-slate-700" />
-                          }
-                        </button>
-                      </div>
-                      <div className="flex items-center justify-between gap-2 rounded-md bg-muted/50 px-3 py-2">
-                        <span className="text-xs font-mono truncate">{projectToView.secretKey}</span>
-                        <button
-                          onClick={() => copyToClipboard(projectToView.secretKey, `settings-sk-${projectToView.id}`)}
-                          className="ml-2 flex-shrink-0"
-                        >
-                          {copiedId === `settings-sk-${projectToView.id}`
-                            ? <Check className="h-3 w-3 text-green-500" />
-                            : <Copy className="h-3 w-3 text-slate-500 hover:text-slate-700" />
-                          }
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button variant="outline" onClick={closeSettingsDialog}>Fermer</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {projectToView && (
+        <EditProjectModal
+          project={projectToView}
+          onClose={closeSettingsDialog}
+        />
+      )}
 
       <Dialog open={!!projectToDelete} onOpenChange={(open) => !open && closeDeleteDialog()}>
         <DialogContent className="sm:max-w-md">

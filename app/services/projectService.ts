@@ -33,4 +33,9 @@ export const projectService = {
     delete: async (id: number): Promise<void> => {
         await api.delete(`/api/projects/${id}`);
     },
+
+    update: async (id: number, data: CreateProjectPayload): Promise<Project> => {
+        const response = await api.put(`/api/projects/${id}`, data)
+        return response.data
+    },
 };

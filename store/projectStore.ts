@@ -8,6 +8,7 @@ interface ProjectState {
     fetchProjects: () => Promise<void>
     createProject: (data: CreateProjectPayload) => Promise<Project>
     deleteProject: (id: number) => Promise<void>
+    updateProject: (id: number, data: CreateProjectPayload) => Promise<void>
     clearError: () => void
 }
 
@@ -59,6 +60,23 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
             set({
                 error: error.response?.data?.message || "Erreur lors de la suppression",
                 isLoading: false,
+            })
+            throw error
+        }
+    },
+
+    updateProject: async (id: number, data: CreateProjectPayload) => {
+        set({ isLoading: true, error: null })
+        try {
+            const updated = await projectService.update(id, data)
+            set((state) => ({
+            projects: state.projects.map((p) => p.id === id ? updated : p),
+            isLoading: false,
+            }))
+        } catch (error: any) {
+            set({
+            error: error.response?.data?.message || "Erreur lors de la modification",
+            isLoading: false,
             })
             throw error
         }
