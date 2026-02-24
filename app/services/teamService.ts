@@ -42,6 +42,6 @@ export const teamService = {
   },
 
   acceptInvitation: async (token: string): Promise<void> => {
-    await api.post(`/api/team/accept/${token}`)
+    await api.post(`/api/invitations/accept/${token}`)
   },
 }

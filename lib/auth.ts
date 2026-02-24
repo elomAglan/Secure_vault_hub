@@ -18,18 +18,26 @@ export interface RegisterData {
   lastName: string;
   email: string;
   password: string;
+  remember?: boolean;
 }
 
 export interface LoginData {
   email: string;
   password: string;
-  remember?: boolean; // 👈 pour choisir local ou session
+  remember?: boolean;
+}
+
+export interface ForgotPasswordData {
+  email: string;
+}
+
+export interface ResetPasswordData {
+  token: string;
+  newPassword: string;
 }
 
 export const authApi = {
-  async register(
-    data: RegisterData & { remember?: boolean }
-  ): Promise<AuthResponse> {
+  async register(data: RegisterData): Promise<AuthResponse> {
     const { remember = true, ...payload } = data;
 
     const response = await api.post<AuthResponse>(
@@ -67,8 +75,11 @@ export const authApi = {
     try {
       await api.post("/api/auth/logout");
     } catch (error) {
-      // If token/session is already invalid, logout should still succeed client-side.
-      if (axios.isAxiosError(error) && [401, 403].includes(error.response?.status ?? 0)) {
+      // Token déjà invalide côté serveur — on logout quand même localement
+      if (
+        axios.isAxiosError(error) &&
+        [401, 403].includes(error.response?.status ?? 0)
+      ) {
         return;
       }
       throw error;
@@ -76,4 +87,12 @@ export const authApi = {
       clearTokens();
     }
   },
-};
+
+  async forgotPassword(email: string): Promise<void> {
+    await api.post("/api/auth/password/forgot", { email });
+  },
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    await api.post("/api/auth/password/reset", { token, newPassword });
+  },
+}
