@@ -44,5 +44,5 @@ export const projectService = {
         const response = await api.get(`/api/projects/${projectId}/my-role`)
         return response.data.role
     },
-
+ 
 };
