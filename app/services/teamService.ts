@@ -53,4 +53,4 @@ export const teamService = {
     const response = await api.patch(`/api/projects/${projectId}/team/members/${memberId}/role`, { role })
     return response.data
   },
-}
+} 
