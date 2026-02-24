@@ -17,6 +17,7 @@ export interface Project {
     theme: Theme;
     primaryColor: string;
     createdAt: string;
+    owner: boolean
 }
 
 export const projectService = {
@@ -38,4 +39,10 @@ export const projectService = {
         const response = await api.put(`/api/projects/${id}`, data)
         return response.data
     },
+
+    getMyRole: async (projectId: number): Promise<string> => {
+        const response = await api.get(`/api/projects/${projectId}/my-role`)
+        return response.data.role
+    },
+
 };

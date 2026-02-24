@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -46,13 +46,11 @@ export default function TeamPage() {
 
   const [isLoading, setIsLoading] = useState(false)
   const [isInviting, setIsInviting] = useState(false)
+  const [roleActionLoadingId, setRoleActionLoadingId] = useState<number | null>(null)
+  const [memberActionLoadingId, setMemberActionLoadingId] = useState<number | null>(null)
+  const [invitationActionLoadingId, setInvitationActionLoadingId] = useState<number | null>(null)
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
-
-  const selectedProject = useMemo(
-    () => projects.find((p) => String(p.id) === selectedProjectId),
-    [projects, selectedProjectId]
-  )
 
   useEffect(() => {
     setMounted(true)
@@ -83,7 +81,7 @@ export default function TeamPage() {
       setMembers(membersData)
       setInvitations(invitationsData)
     } catch {
-      appToast.error('Erreur lors du chargement de l\'équipe')
+      appToast.error("Erreur lors du chargement de l'équipe")
     } finally {
       setIsLoading(false)
     }
@@ -107,7 +105,7 @@ export default function TeamPage() {
       setIsInviteDialogOpen(false)
       await loadTeamData(projectId)
     } catch {
-      appToast.error('Erreur lors de l\'invitation')
+      appToast.error("Erreur lors de l'invitation")
     } finally {
       setIsInviting(false)
     }
@@ -117,12 +115,48 @@ export default function TeamPage() {
     const projectId = Number(selectedProjectId)
     if (!projectId) return
 
+    setInvitationActionLoadingId(invitationId)
     try {
       await teamService.cancelInvitation(projectId, invitationId)
       appToast.success('Invitation annulée')
       await loadTeamData(projectId)
     } catch {
-      appToast.error('Erreur lors de l\'annulation')
+      appToast.error("Erreur lors de l'annulation")
+    } finally {
+      setInvitationActionLoadingId(null)
+    }
+  }
+
+  const handleChangeRole = async (memberId: number, role: 'admin' | 'member') => {
+    const projectId = Number(selectedProjectId)
+    if (!projectId) return
+
+    setRoleActionLoadingId(memberId)
+    try {
+      await teamService.changeMemberRole(projectId, memberId, role)
+      appToast.success('Rôle mis à jour')
+      await loadTeamData(projectId)
+    } catch {
+      appToast.error('Erreur lors de la mise à jour du rôle')
+    } finally {
+      setRoleActionLoadingId(null)
+    }
+  }
+
+  const handleRemoveMember = async (member: TeamMember) => {
+    const projectId = Number(selectedProjectId)
+    if (!projectId) return
+    if (!confirm(`Retirer ${member.firstName} ${member.lastName} de l'équipe ?`)) return
+
+    setMemberActionLoadingId(member.id)
+    try {
+      await teamService.removeMember(projectId, member.id)
+      appToast.success('Membre retiré')
+      await loadTeamData(projectId)
+    } catch {
+      appToast.error('Erreur lors du retrait du membre')
+    } finally {
+      setMemberActionLoadingId(null)
     }
   }
 
@@ -131,9 +165,9 @@ export default function TeamPage() {
 
   const formatRole = (role: string) => {
     const roles: Record<string, string> = {
-      'admin': 'Administrateur',
-      'owner': 'Propriétaire',
-      'member': 'Membre'
+      admin: 'Administrateur',
+      owner: 'Propriétaire',
+      member: 'Membre',
     }
     return roles[role.toLowerCase()] || role
   }
@@ -171,12 +205,12 @@ export default function TeamPage() {
                     disabled={isInviting}
                   />
                 </div>
-                <div className="flex gap-2 justify-end">
+                <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={() => setIsInviteDialogOpen(false)} disabled={isInviting}>
                     Annuler
                   </Button>
                   <Button onClick={() => void handleInvite()} disabled={isInviting}>
-                    {isInviting ? 'Envoi...' : 'Envoyer l\'invitation'}
+                    {isInviting ? 'Envoi...' : "Envoyer l'invitation"}
                   </Button>
                 </div>
               </div>
@@ -221,7 +255,7 @@ export default function TeamPage() {
                 <TableHead className="px-6 py-4 font-semibold">Email</TableHead>
                 <TableHead className="px-6 py-4 font-semibold">Rôle</TableHead>
                 <TableHead className="px-6 py-4 font-semibold">Rejoint le</TableHead>
-                <TableHead className="px-6 py-4 font-semibold text-right">Actions</TableHead>
+                <TableHead className="px-6 py-4 text-right font-semibold">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -249,47 +283,75 @@ export default function TeamPage() {
                 </TableRow>
               )}
 
-              {!isLoading && members.map((member) => (
-                <TableRow
-                  key={member.id}
-                  className="border-b border-border hover:bg-background/50"
-                >
-                  <TableCell className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-9 w-9">
-                        <AvatarFallback>{getInitials(member.firstName, member.lastName)}</AvatarFallback>
-                      </Avatar>
-                      <span className="font-medium text-sm">{member.firstName} {member.lastName}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="px-6 py-4 text-sm text-foreground/60">
-                    {member.email}
-                  </TableCell>
-                  <TableCell className="px-6 py-4">
-                    <Badge variant="outline" className="capitalize">
-                      {formatRole(member.role)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="px-6 py-4 text-sm text-foreground/60">
-                    {new Date(member.joinedAt).toLocaleDateString('fr-FR')}
-                  </TableCell>
-                  <TableCell className="px-6 py-4 text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem disabled>Modifier le rôle (indisponible)</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive" disabled>
-                          Retirer le membre (indisponible)
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {!isLoading &&
+                members.map((member) => {
+                  const role = member.role.toLowerCase()
+                  const isOwner = role === 'owner'
+                  const isMemberBusy = roleActionLoadingId === member.id || memberActionLoadingId === member.id
+
+                  return (
+                    <TableRow key={member.id} className="border-b border-border hover:bg-background/50">
+                      <TableCell className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-9 w-9">
+                            <AvatarFallback>{getInitials(member.firstName, member.lastName)}</AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm font-medium">
+                            {member.firstName} {member.lastName}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-6 py-4 text-sm text-foreground/60">{member.email}</TableCell>
+                      <TableCell className="px-6 py-4">
+                        <Badge variant="outline" className="capitalize">
+                          {formatRole(member.role)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="px-6 py-4 text-sm text-foreground/60">
+                        {new Date(member.joinedAt).toLocaleDateString('fr-FR')}
+                      </TableCell>
+                      <TableCell className="px-6 py-4 text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" disabled={isMemberBusy}>
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {isOwner && (
+                              <DropdownMenuItem disabled>Propriétaire (actions bloquées)</DropdownMenuItem>
+                            )}
+                            {!isOwner && role !== 'admin' && (
+                              <DropdownMenuItem
+                                disabled={isMemberBusy}
+                                onClick={() => void handleChangeRole(member.id, 'admin')}
+                              >
+                                Passer administrateur
+                              </DropdownMenuItem>
+                            )}
+                            {!isOwner && role !== 'member' && (
+                              <DropdownMenuItem
+                                disabled={isMemberBusy}
+                                onClick={() => void handleChangeRole(member.id, 'member')}
+                              >
+                                Passer membre
+                              </DropdownMenuItem>
+                            )}
+                            {!isOwner && (
+                              <DropdownMenuItem
+                                className="text-destructive"
+                                disabled={isMemberBusy}
+                                onClick={() => void handleRemoveMember(member)}
+                              >
+                                Retirer le membre
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
             </TableBody>
           </Table>
         </div>
@@ -298,9 +360,7 @@ export default function TeamPage() {
       <Card className="border border-border p-6">
         <h2 className="mb-4 font-semibold">Invitations en attente</h2>
 
-        {isLoading && (
-          <p className="text-sm text-foreground/60">Chargement des invitations...</p>
-        )}
+        {isLoading && <p className="text-sm text-foreground/60">Chargement des invitations...</p>}
 
         {!isLoading && invitations.length === 0 && (
           <p className="text-sm text-foreground/60">Aucune invitation en attente.</p>
@@ -308,7 +368,7 @@ export default function TeamPage() {
 
         <div className="space-y-3">
           {invitations.map((invitation) => (
-            <div key={invitation.id} className="flex items-center justify-between p-3 border border-border rounded-lg">
+            <div key={invitation.id} className="flex items-center justify-between rounded-lg border border-border p-3">
               <div className="flex items-center gap-3">
                 <Mail className="h-4 w-4 text-foreground/40" />
                 <div>
@@ -321,9 +381,10 @@ export default function TeamPage() {
               <Button
                 variant="ghost"
                 size="sm"
+                disabled={invitationActionLoadingId === invitation.id}
                 onClick={() => void handleCancelInvitation(invitation.id)}
               >
-                Annuler
+                {invitationActionLoadingId === invitation.id ? 'Annulation...' : 'Annuler'}
               </Button>
             </div>
           ))}

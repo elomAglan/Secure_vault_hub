@@ -44,5 +44,13 @@ export const teamService = {
   acceptInvitation: async (token: string): Promise<void> => {
     await api.post(`/api/invitations/accept/${token}`)
   },
+
+  removeMember: async (projectId: number, memberId: number): Promise<void> => {
+    await api.delete(`/api/projects/${projectId}/team/members/${memberId}`)
+  },
+
+  changeMemberRole: async (projectId: number, memberId: number, role: string): Promise<TeamMember> => {
+    const response = await api.patch(`/api/projects/${projectId}/team/members/${memberId}/role`, { role })
+    return response.data
+  },
 }
- 
