@@ -45,3 +45,4 @@ export const teamService = {
     await api.post(`/api/invitations/accept/${token}`)
   },
 }
+ 
