@@ -59,4 +59,4 @@ export const profileService = {
   deleteAccount: async (): Promise<void> => {
     await api.delete("/api/profile/account")
   },
-} 
+}
