@@ -65,7 +65,7 @@ export function Sidebar({ mobile = false, onNavigate }: SidebarProps) {
       className={cn(
         mobile
           ? 'relative flex h-full w-full flex-col bg-background'
-          : 'relative hidden h-screen flex-col bg-background transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] lg:flex border-r border-border/50',
+          : 'relative hidden h-screen flex-col bg-background transition-[width] duration-300 ease-in-out lg:flex border-r border-border/50',
         !mobile && (isCollapsed ? 'w-[80px]' : 'w-64')
       )}
     >
