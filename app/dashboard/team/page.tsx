@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -51,6 +51,12 @@ export default function TeamPage() {
   const [invitationActionLoadingId, setInvitationActionLoadingId] = useState<number | null>(null)
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
+  const selectedProject = useMemo(
+    () => projects.find((project) => String(project.id) === selectedProjectId),
+    [projects, selectedProjectId]
+  )
+  const isOwner = selectedProject?.owner ?? false
+  const isAdminOrOwner = isOwner
 
   useEffect(() => {
     setMounted(true)
@@ -182,7 +188,7 @@ export default function TeamPage() {
         {mounted ? (
           <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
             <DialogTrigger asChild>
-              <Button disabled={!selectedProjectId}>
+              <Button disabled={!selectedProjectId || !isAdminOrOwner}>
                 <Plus className="mr-2 h-4 w-4" />
                 Inviter un membre
               </Button>
@@ -286,7 +292,7 @@ export default function TeamPage() {
               {!isLoading &&
                 members.map((member) => {
                   const role = member.role.toLowerCase()
-                  const isOwner = role === 'owner'
+                  const isMemberOwner = role === 'owner'
                   const isMemberBusy = roleActionLoadingId === member.id || memberActionLoadingId === member.id
 
                   return (
@@ -313,15 +319,20 @@ export default function TeamPage() {
                       <TableCell className="px-6 py-4 text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" disabled={isMemberBusy}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              disabled={isMemberBusy || !isAdminOrOwner}
+                            >
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            {isOwner && (
+                            {isMemberOwner && (
                               <DropdownMenuItem disabled>Propriétaire (actions bloquées)</DropdownMenuItem>
                             )}
-                            {!isOwner && role !== 'admin' && (
+                            {isOwner && !isMemberOwner && role !== 'admin' && (
                               <DropdownMenuItem
                                 disabled={isMemberBusy}
                                 onClick={() => void handleChangeRole(member.id, 'admin')}
@@ -329,7 +340,7 @@ export default function TeamPage() {
                                 Passer administrateur
                               </DropdownMenuItem>
                             )}
-                            {!isOwner && role !== 'member' && (
+                            {isOwner && !isMemberOwner && role !== 'member' && (
                               <DropdownMenuItem
                                 disabled={isMemberBusy}
                                 onClick={() => void handleChangeRole(member.id, 'member')}
@@ -337,7 +348,7 @@ export default function TeamPage() {
                                 Passer membre
                               </DropdownMenuItem>
                             )}
-                            {!isOwner && (
+                            {isAdminOrOwner && !isMemberOwner && (
                               <DropdownMenuItem
                                 className="text-destructive"
                                 disabled={isMemberBusy}
@@ -378,14 +389,16 @@ export default function TeamPage() {
                   </p>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={invitationActionLoadingId === invitation.id}
-                onClick={() => void handleCancelInvitation(invitation.id)}
-              >
-                {invitationActionLoadingId === invitation.id ? 'Annulation...' : 'Annuler'}
-              </Button>
+              {isAdminOrOwner && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={invitationActionLoadingId === invitation.id}
+                  onClick={() => void handleCancelInvitation(invitation.id)}
+                >
+                  {invitationActionLoadingId === invitation.id ? 'Annulation...' : 'Annuler'}
+                </Button>
+              )}
             </div>
           ))}
         </div>

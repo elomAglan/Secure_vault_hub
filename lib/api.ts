@@ -101,8 +101,8 @@ api.interceptors.response.use(
 
     const status = error.response?.status;
 
-    // Most APIs use 401 or 403 for expired access tokens.
-    if (![401, 403].includes(status ?? 0)) {
+    // Refresh only on 401. A 403 usually means forbidden (role/permission), not expired session.
+    if (status !== 401) {
       return Promise.reject(error);
     }
 

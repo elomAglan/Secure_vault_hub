@@ -1,5 +1,18 @@
 import { create } from "zustand"
-import { projectService, Project, CreateProjectPayload } from "@/app/services/projectService"
+import { projectService, CreateProjectPayload } from "@/app/services/projectService"
+import { AuthProvider, Theme } from "@/types/project"
+
+export interface Project {
+    id: number
+    name: string
+    publicKey: string
+    secretKey: string
+    authProviders: AuthProvider[]
+    theme: Theme
+    primaryColor: string
+    createdAt: string
+    owner: boolean
+}
 
 interface ProjectState {
     projects: Project[]
@@ -84,3 +97,4 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
     clearError: () => set({ error: null }),
 }))
+ 

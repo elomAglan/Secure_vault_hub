@@ -47,6 +47,8 @@ export default function SessionsPage() {
     () => projects.find((p) => String(p.id) === selectedProjectId),
     [projects, selectedProjectId]
   )
+  const isOwner = selectedProject?.owner ?? false
+  const isAdminOrOwner = isOwner
 
   useEffect(() => {
     void fetchProjects()
@@ -59,8 +61,15 @@ export default function SessionsPage() {
 
   useEffect(() => {
     if (!selectedProject) return
+    if (!isAdminOrOwner) {
+      setSessions([])
+      setTotalElements(0)
+      setTotalPages(0)
+      setCurrentPage(0)
+      return
+    }
     void loadSessions(0)
-  }, [selectedProject])
+  }, [selectedProject, isAdminOrOwner])
 
   const loadSessions = async (page: number) => {
     if (!selectedProject) return
@@ -81,6 +90,7 @@ export default function SessionsPage() {
 
   const handleRevoke = async (sessionId: number) => {
     if (!selectedProject) return
+    if (!isAdminOrOwner) return
 
     if (!window.confirm('Révoquer cette session ?')) return
 
@@ -93,8 +103,8 @@ export default function SessionsPage() {
     }
   }
 
-  const getDeviceIcon = (userAgent: string) => {
-    const ua = userAgent.toLowerCase()
+  const getDeviceIcon = (userAgent?: string | null) => {
+    const ua = (userAgent ?? '').toLowerCase()
     if (ua.includes('iphone') || ua.includes('android') || ua.includes('mobile')) {
       return <Smartphone className="h-4 w-4" />
     }
@@ -104,8 +114,8 @@ export default function SessionsPage() {
     return <Monitor className="h-4 w-4" />
   }
 
-  const getBrowser = (userAgent: string) => {
-    const ua = userAgent.toLowerCase()
+  const getBrowser = (userAgent?: string | null) => {
+    const ua = (userAgent ?? '').toLowerCase()
     if (ua.includes('edg/')) return 'Edge'
     if (ua.includes('chrome/')) return 'Chrome'
     if (ua.includes('firefox/')) return 'Firefox'
@@ -113,8 +123,8 @@ export default function SessionsPage() {
     return 'Inconnu'
   }
 
-  const getDeviceLabel = (userAgent: string) => {
-    const ua = userAgent.toLowerCase()
+  const getDeviceLabel = (userAgent?: string | null) => {
+    const ua = (userAgent ?? '').toLowerCase()
     if (ua.includes('iphone')) return 'iPhone'
     if (ua.includes('ipad')) return 'iPad'
     if (ua.includes('android')) return 'Android'
@@ -124,13 +134,16 @@ export default function SessionsPage() {
     return 'Appareil inconnu'
   }
 
-  const formatLastActivity = (iso: string) => {
+  const formatLastActivity = (iso?: string | null) => {
+    if (!iso) return 'Inconnue'
+
     const date = new Date(iso)
+    if (Number.isNaN(date.getTime())) return 'Inconnue'
     const now = new Date()
     const diffMs = now.getTime() - date.getTime()
     const diffMins = Math.floor(diffMs / 60000)
 
-    if (diffMins < 1) return 'À l\'instant'
+    if (diffMins < 1) return "À l'instant"
     if (diffMins < 60) return `Il y a ${diffMins}m`
 
     const diffHours = Math.floor(diffMins / 60)
@@ -152,9 +165,9 @@ export default function SessionsPage() {
         <Button
           variant="outline"
           onClick={() => void loadSessions(currentPage)}
-          disabled={isLoading || !selectedProject}
+          disabled={isLoading || !selectedProject || !isAdminOrOwner}
         >
-          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
           Actualiser
         </Button>
       </div>
@@ -192,7 +205,7 @@ export default function SessionsPage() {
                 <TableHead className="px-6 py-4 font-semibold">Adresse IP</TableHead>
                 <TableHead className="px-6 py-4 font-semibold">Dernière activité</TableHead>
                 <TableHead className="px-6 py-4 font-semibold">Statut</TableHead>
-                <TableHead className="px-6 py-4 font-semibold text-right">Actions</TableHead>
+                <TableHead className="px-6 py-4 text-right font-semibold">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -204,7 +217,15 @@ export default function SessionsPage() {
                 </TableRow>
               )}
 
-              {isLoading && selectedProjectId && (
+              {!isAdminOrOwner && selectedProjectId && (
+                <TableRow>
+                  <TableCell colSpan={7} className="px-6 py-8 text-center text-foreground/60">
+                    Accès restreint: vous pouvez consulter cette page uniquement en tant que propriétaire du projet.
+                  </TableCell>
+                </TableRow>
+              )}
+
+              {isLoading && selectedProjectId && isAdminOrOwner && (
                 <TableRow>
                   <TableCell colSpan={7} className="px-6 py-8 text-center text-foreground/60">
                     Chargement des sessions...
@@ -212,7 +233,7 @@ export default function SessionsPage() {
                 </TableRow>
               )}
 
-              {!isLoading && selectedProjectId && sessions.length === 0 && (
+              {!isLoading && selectedProjectId && isAdminOrOwner && sessions.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={7} className="px-6 py-8 text-center text-foreground/60">
                     Aucune session active
@@ -220,7 +241,7 @@ export default function SessionsPage() {
                 </TableRow>
               )}
 
-              {!isLoading && sessions.map((session) => (
+              {!isLoading && isAdminOrOwner && sessions.map((session) => (
                 <TableRow
                   key={session.id}
                   className="border-b border-border hover:bg-background/50"
@@ -232,9 +253,9 @@ export default function SessionsPage() {
                     </div>
                   </TableCell>
                   <TableCell className="px-6 py-4 text-sm">{getBrowser(session.userAgent)}</TableCell>
-                  <TableCell className="px-6 py-4 text-sm">{session.email}</TableCell>
-                  <TableCell className="px-6 py-4 text-sm font-mono text-xs">
-                    {session.ipAddress}
+                  <TableCell className="px-6 py-4 text-sm">{session.email || 'Inconnu'}</TableCell>
+                  <TableCell className="px-6 py-4 font-mono text-xs">
+                    {session.ipAddress || 'Inconnue'}
                   </TableCell>
                   <TableCell className="px-6 py-4 text-sm">
                     <Badge variant="outline">
@@ -249,18 +270,20 @@ export default function SessionsPage() {
                   <TableCell className="px-6 py-4 text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" disabled={!isAdminOrOwner}>
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={() => void handleRevoke(session.id)}
-                          disabled={!session.active}
-                        >
-                          Révoquer la session
-                        </DropdownMenuItem>
+                        {isAdminOrOwner && (
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => void handleRevoke(session.id)}
+                            disabled={!session.active}
+                          >
+                            Révoquer la session
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -278,14 +301,14 @@ export default function SessionsPage() {
         <div className="flex gap-2">
           <Button
             variant="outline"
-            disabled={currentPage === 0 || isLoading || !selectedProject}
+            disabled={currentPage === 0 || isLoading || !selectedProject || !isAdminOrOwner}
             onClick={() => void loadSessions(currentPage - 1)}
           >
             Précédent
           </Button>
           <Button
             variant="outline"
-            disabled={currentPage >= totalPages - 1 || isLoading || !selectedProject}
+            disabled={currentPage >= totalPages - 1 || isLoading || !selectedProject || !isAdminOrOwner}
             onClick={() => void loadSessions(currentPage + 1)}
           >
             Suivant
@@ -295,8 +318,8 @@ export default function SessionsPage() {
 
       <div className="rounded-lg border border-border bg-background/50 p-4">
         <p className="text-sm text-foreground/60">
-          Les sessions actives sont affichées ici. Vous pouvez révoquer n'importe quelle session pour forcer l'utilisateur à
-          se ré-authentifier.
+          Les sessions actives sont affichées ici. Vous pouvez révoquer n'importe quelle session pour forcer
+          l'utilisateur à se ré-authentifier.
         </p>
       </div>
     </div>

@@ -156,20 +156,24 @@ export default function ProjectsPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      className="flex gap-2"
-                      onClick={() => openSettingsDialog(project)}
-                    >
-                      <Settings className="h-4 w-4" />
-                      Paramètres
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="flex gap-2 text-red-600 focus:text-red-600"
-                      onClick={() => openDeleteDialog(project)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Supprimer
-                    </DropdownMenuItem>
+                    {project.owner && (
+                      <>
+                        <DropdownMenuItem
+                          className="flex gap-2"
+                          onClick={() => openSettingsDialog(project)}
+                        >
+                          <Settings className="h-4 w-4" />
+                          Paramètres
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="flex gap-2 text-red-600 focus:text-red-600"
+                          onClick={() => openDeleteDialog(project)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Supprimer
+                        </DropdownMenuItem>
+                      </>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -210,18 +214,20 @@ export default function ProjectsPage() {
                   <div className="flex items-center gap-2 min-w-0">
                     <Key className="h-3 w-3 text-amber-500 flex-shrink-0" />
                     <span className="text-[10px] font-mono text-amber-600 truncate">
-                      {project.secretKey.substring(0, 16)}••••••••
+                      {project.owner ? project.secretKey.substring(0, 16) + '********' : 'Accès restreint'}
                     </span>
                   </div>
-                  <button
-                    onClick={() => copyToClipboard(project.secretKey, `sk-${project.id}`)}
-                    className="ml-2 flex-shrink-0"
-                  >
-                    {copiedId === `sk-${project.id}`
-                      ? <Check className="h-3 w-3 text-green-500" />
-                      : <Copy className="h-3 w-3 text-amber-400 hover:text-amber-700" />
-                    }
-                  </button>
+                  {project.owner && (
+                    <button
+                      onClick={() => copyToClipboard(project.secretKey, `sk-${project.id}`)}
+                      className="ml-2 flex-shrink-0"
+                    >
+                      {copiedId === `sk-${project.id}`
+                        ? <Check className="h-3 w-3 text-green-500" />
+                        : <Copy className="h-3 w-3 text-amber-400 hover:text-amber-700" />
+                      }
+                    </button>
+                  )}
                 </div>
               </div>
 

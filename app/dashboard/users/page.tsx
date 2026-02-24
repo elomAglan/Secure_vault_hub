@@ -32,17 +32,18 @@ export default function UsersPage() {
 
   const [selectedProjectId, setSelectedProjectId] = useState<string>('')
   const [users, setUsers] = useState<ProjectUserItem[]>([])
-  const [totalElements, setTotalElements] = useState(0) 
+  const [totalElements, setTotalElements] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [currentPage, setCurrentPage] = useState(0)
   const [searchTerm, setSearchTerm] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  // Récupère la secretKey du projet sélectionné
   const selectedProject = useMemo(
     () => projects.find((p) => String(p.id) === selectedProjectId),
     [projects, selectedProjectId]
   )
+  const isOwner = selectedProject?.owner ?? false
+  const isAdminOrOwner = isOwner
 
   useEffect(() => {
     fetchProjects()
@@ -55,11 +56,19 @@ export default function UsersPage() {
 
   useEffect(() => {
     if (!selectedProject) return
+    if (!isAdminOrOwner) {
+      setUsers([])
+      setTotalElements(0)
+      setTotalPages(0)
+      setCurrentPage(0)
+      return
+    }
     loadUsers(0, searchTerm)
-  }, [selectedProjectId])
+  }, [selectedProjectId, isAdminOrOwner])
 
   const loadUsers = async (page: number, query: string) => {
     if (!selectedProject) return
+    if (!isAdminOrOwner) return
     setIsLoading(true)
     try {
       const result = await sdkUsersService.getUsers(
@@ -83,6 +92,7 @@ export default function UsersPage() {
 
   const handleDisable = async (email: string) => {
     if (!selectedProject) return
+    if (!isAdminOrOwner) return
     try {
       await sdkUsersService.disableUser(selectedProject.secretKey, email)
       appToast.success('Utilisateur désactivé')
@@ -94,6 +104,7 @@ export default function UsersPage() {
 
   const handleEnable = async (email: string) => {
     if (!selectedProject) return
+    if (!isAdminOrOwner) return
     try {
       await sdkUsersService.enableUser(selectedProject.secretKey, email)
       appToast.success('Utilisateur réactivé')
@@ -105,6 +116,7 @@ export default function UsersPage() {
 
   const handleDelete = async (email: string) => {
     if (!selectedProject) return
+    if (!isAdminOrOwner) return
     if (!confirm('Supprimer cet utilisateur ?')) return
     try {
       await sdkUsersService.deleteUser(selectedProject.secretKey, email)
@@ -120,11 +132,9 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-8">
-
-      {/* HEADER */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-3">
+          <h1 className="flex items-center gap-3 text-3xl font-bold">
             <Users className="h-8 w-8 text-primary" />
             Utilisateurs
           </h1>
@@ -135,14 +145,13 @@ export default function UsersPage() {
         <Button
           variant="outline"
           onClick={() => loadUsers(currentPage, searchTerm)}
-          disabled={isLoading}
+          disabled={isLoading || !isAdminOrOwner}
         >
-          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
           Actualiser
         </Button>
       </div>
 
-      {/* PROJET SELECTOR */}
       <Card className="border border-border p-6">
         <Label className="mb-2 block">Projet</Label>
         <Select
@@ -166,7 +175,6 @@ export default function UsersPage() {
         </Select>
       </Card>
 
-      {/* SEARCH */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/40" />
         <Input
@@ -177,7 +185,6 @@ export default function UsersPage() {
         />
       </div>
 
-      {/* TABLE */}
       <Card className="border border-border p-0">
         <div className="overflow-x-auto">
           <Table>
@@ -186,7 +193,7 @@ export default function UsersPage() {
                 <TableHead className="px-6 py-4 font-semibold">Utilisateur</TableHead>
                 <TableHead className="px-6 py-4 font-semibold">Statut</TableHead>
                 <TableHead className="px-6 py-4 font-semibold">Inscrit le</TableHead>
-                <TableHead className="px-6 py-4 font-semibold text-right">Actions</TableHead>
+                <TableHead className="px-6 py-4 text-right font-semibold">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -198,7 +205,15 @@ export default function UsersPage() {
                 </TableRow>
               )}
 
-              {isLoading && selectedProjectId && (
+              {!isAdminOrOwner && selectedProjectId && (
+                <TableRow>
+                  <TableCell colSpan={4} className="px-6 py-8 text-center text-foreground/60">
+                    Accès restreint: vous pouvez consulter cette page uniquement en tant que propriétaire du projet.
+                  </TableCell>
+                </TableRow>
+              )}
+
+              {isLoading && selectedProjectId && isAdminOrOwner && (
                 <TableRow>
                   <TableCell colSpan={4} className="px-6 py-8 text-center text-foreground/60">
                     Chargement...
@@ -206,7 +221,7 @@ export default function UsersPage() {
                 </TableRow>
               )}
 
-              {!isLoading && selectedProjectId && users.length === 0 && (
+              {!isLoading && selectedProjectId && isAdminOrOwner && users.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={4} className="px-6 py-8 text-center text-foreground/60">
                     Aucun utilisateur trouvé.
@@ -214,7 +229,7 @@ export default function UsersPage() {
                 </TableRow>
               )}
 
-              {!isLoading && users.map((user) => (
+              {!isLoading && isAdminOrOwner && users.map((user) => (
                 <TableRow
                   key={user.id}
                   className="border-b border-border hover:bg-background/50"
@@ -227,7 +242,7 @@ export default function UsersPage() {
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-medium text-sm">
+                        <p className="text-sm font-medium">
                           {user.firstName} {user.lastName}
                         </p>
                         <p className="text-xs text-foreground/60">{user.email}</p>
@@ -248,7 +263,7 @@ export default function UsersPage() {
                   <TableCell className="px-6 py-4 text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" disabled={!isAdminOrOwner}>
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -282,7 +297,6 @@ export default function UsersPage() {
         </div>
       </Card>
 
-      {/* PAGINATION */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-foreground/60">
           {totalElements} utilisateur{totalElements > 1 ? 's' : ''} au total
@@ -290,14 +304,14 @@ export default function UsersPage() {
         <div className="flex gap-2">
           <Button
             variant="outline"
-            disabled={currentPage === 0 || isLoading}
+            disabled={currentPage === 0 || isLoading || !isAdminOrOwner}
             onClick={() => loadUsers(currentPage - 1, searchTerm)}
           >
             Précédent
           </Button>
           <Button
             variant="outline"
-            disabled={currentPage >= totalPages - 1 || isLoading}
+            disabled={currentPage >= totalPages - 1 || isLoading || !isAdminOrOwner}
             onClick={() => loadUsers(currentPage + 1, searchTerm)}
           >
             Suivant

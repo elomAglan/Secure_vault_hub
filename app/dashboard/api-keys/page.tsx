@@ -53,24 +53,31 @@ export default function ApiKeysPage() {
   }, [fetchProjects])
 
   const apiKeys = useMemo<ApiKeyItem[]>(() => {
-    return projects.flatMap((project) => [
-      {
-        id: `pk-${project.id}`,
-        projectName: project.name,
-        key: project.publicKey,
-        type: 'Public',
-        createdAt: project.createdAt,
-        status: 'active',
-      },
-      {
-        id: `sk-${project.id}`,
-        projectName: project.name,
-        key: project.secretKey,
-        type: 'Secret',
-        createdAt: project.createdAt,
-        status: 'active',
-      },
-    ])
+    return projects.flatMap((project) => {
+      const keys: ApiKeyItem[] = [
+        {
+          id: `pk-${project.id}`,
+          projectName: project.name,
+          key: project.publicKey,
+          type: 'Public',
+          createdAt: project.createdAt,
+          status: 'active',
+        },
+      ]
+
+      if (project.owner) {
+        keys.push({
+          id: `sk-${project.id}`,
+          projectName: project.name,
+          key: project.secretKey,
+          type: 'Secret',
+          createdAt: project.createdAt,
+          status: 'active',
+        })
+      }
+
+      return keys
+    })
   }, [projects])
 
   const filteredKeys = useMemo(() => {
