@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { CheckCircle, Loader2, XCircle } from 'lucide-react'
@@ -11,7 +11,7 @@ import { teamService } from '@/app/services/teamService'
 
 type Status = 'idle' | 'loading' | 'success' | 'error'
 
-export default function AcceptInvitePage() {
+function AcceptInviteContent() {
   const searchParams = useSearchParams()
   const token = searchParams.get('token')?.trim() ?? ''
   const [status, setStatus] = useState<Status>('idle')
@@ -113,5 +113,13 @@ export default function AcceptInvitePage() {
         </Card>
       </div>
     </div>
+  )
+}
+
+export default function AcceptInvitePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+      <AcceptInviteContent />
+    </Suspense>
   )
 }

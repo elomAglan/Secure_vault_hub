@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
 
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -14,8 +13,6 @@ import { Sidebar } from './sidebar'
 import { authApi } from '@/lib/auth'
 
 export function Navbar() {
-  const router = useRouter()
-  const pathname = usePathname()
   const [mounted, setMounted] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
 
@@ -23,17 +20,15 @@ export function Navbar() {
     setMounted(true)
   }, [])
 
-  useEffect(() => {
-    setSheetOpen(false)
-  }, [pathname])
-
   const handleLogout = async () => {
     try {
       await authApi.logout()
     } catch (error) {
       console.error('Logout failed', error)
     } finally {
-      router.replace('/auth/login')
+      if (typeof window !== 'undefined') {
+        window.location.href = '/auth/login'
+      }
     }
   }
 

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef } from 'react'
+import React, { Suspense, useState, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
@@ -39,7 +39,7 @@ const COLOR_OPTIONS = [
   { label: 'Slate',   value: '#0F172A' },
 ]
 
-export default function CreateAppPage() {
+function CreateAppContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { createProject, isLoading, error, clearError } = useProjectStore()
@@ -370,6 +370,14 @@ export default function CreateAppPage() {
 
       </div>
     </div>
+  )
+}
+
+export default function CreateAppPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+      <CreateAppContent />
+    </Suspense>
   )
 }
 

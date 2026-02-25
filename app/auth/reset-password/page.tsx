@@ -8,10 +8,10 @@ import { Logo } from '@/components/shared/logo'
 import { authService } from '@/app/services/authService'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { Check, X, CheckCircle } from 'lucide-react'
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const searchParams = useSearchParams()
   const resetToken = searchParams.get('token')?.trim() ?? ''
 
@@ -220,5 +220,13 @@ export default function ResetPasswordPage() {
         </Card>
       </div>
     </div>
+  )
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+      <ResetPasswordContent />
+    </Suspense>
   )
 }

@@ -1,9 +1,8 @@
 'use client'
 
-import React, { useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard,
   Package,
@@ -44,11 +43,22 @@ type SidebarProps = {
 }
 
 export function Sidebar({ mobile = false, onNavigate }: SidebarProps) {
-  const pathname = usePathname()
-  const router = useRouter()
+  const [pathname, setPathname] = useState<string>(() =>
+    typeof window === 'undefined' ? '' : window.location.pathname
+  )
   const [isCollapsed, setIsCollapsed] = useState(false)
 
   const toggleSidebar = useCallback(() => setIsCollapsed((prev) => !prev), [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const updatePath = () => setPathname(window.location.pathname)
+    updatePath()
+    window.addEventListener('popstate', updatePath)
+
+    return () => window.removeEventListener('popstate', updatePath)
+  }, [])
 
   const handleLogout = async () => {
     try {
@@ -56,7 +66,9 @@ export function Sidebar({ mobile = false, onNavigate }: SidebarProps) {
     } catch (error) {
       console.error('Logout failed', error)
     } finally {
-      router.replace('/auth/login')
+      if (typeof window !== 'undefined') {
+        window.location.href = '/auth/login'
+      }
     }
   }
 
@@ -122,6 +134,10 @@ export function Sidebar({ mobile = false, onNavigate }: SidebarProps) {
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={() => {
+                  setPathname(item.href)
+                  onNavigate?.()
+                }}
                 className={cn(
                   'group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-200',
                   isActive ? 'text-primary' : 'text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground',
@@ -162,7 +178,6 @@ export function Sidebar({ mobile = false, onNavigate }: SidebarProps) {
         <button
           onClick={() => {
             void handleLogout()
-            onNavigate?.()
           }}
           className={cn(
             'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-500 hover:bg-red-50/50 transition-colors duration-200',

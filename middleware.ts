@@ -13,6 +13,7 @@ const PUBLIC_PATHS = new Set([
   "/auth/forgot-password",
   "/auth/reset-password",
   "/auth/verify-email",
+  "/invite/accept",  // ← ajouté
 ]);
 
 const PROTECTED_PREFIXES = [
@@ -31,7 +32,7 @@ const isProtectedPath = (pathname: string) =>
 
 const isPublicPath = (pathname: string) => {
   if (PUBLIC_PATHS.has(pathname)) return true;
-  return ["/pricing", "/features", "/docs", "/contact", "/changelog"].some(
+  return ["/pricing", "/features", "/docs", "/contact", "/changelog", "/invite"].some(
     (prefix) => pathname.startsWith(`${prefix}/`)
   );
 };
@@ -49,11 +50,6 @@ export function middleware(request: NextRequest) {
 
   if (isAuthenticated && AUTH_PAGES.has(pathname)) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
-
-  if (!isProtectedPath(pathname) && !isPublicPath(pathname) && !pathname.startsWith("/auth/")) {
-    // Unknown app route: let Next.js handle 404.
-    return NextResponse.next();
   }
 
   return NextResponse.next();
