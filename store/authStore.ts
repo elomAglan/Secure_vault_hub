@@ -34,6 +34,9 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null })
         try {
           const response = await authApi.register(data)
+          if (!response?.accessToken || !response?.refreshToken) {
+            throw new Error("Reponse d'inscription invalide")
+          }
           saveTokens(response.accessToken, response.refreshToken, false)
           set({
             user: {
@@ -47,7 +50,7 @@ export const useAuthStore = create<AuthState>()(
           })
           appToast.success("Compte créé avec succès", `Bienvenue, ${response.firstName}.`)
         } catch (error: any) {
-          const message = error.response?.data?.message || "Erreur lors de l'inscription"
+          const message = error.response?.data?.message || error?.message || "Erreur lors de l'inscription"
           set({ error: message, isLoading: false })
           appToast.error("Inscription échouée", message)
           throw error
@@ -58,6 +61,9 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null })
         try {
           const response = await authApi.login(data)
+          if (!response?.accessToken || !response?.refreshToken) {
+            throw new Error("Reponse de connexion invalide")
+          }
           saveTokens(response.accessToken, response.refreshToken, remember)
           set({
             user: {
@@ -71,7 +77,7 @@ export const useAuthStore = create<AuthState>()(
           })
           appToast.success("Connexion réussie", `Bon retour, ${response.firstName}.`)
         } catch (error: any) {
-          const message = error.response?.data?.message || "Email ou mot de passe incorrect"
+          const message = error.response?.data?.message || error?.message || "Email ou mot de passe incorrect"
           set({ error: message, isLoading: false })
           appToast.error("Connexion échouée", message)
           throw error
