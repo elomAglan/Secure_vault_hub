@@ -16,35 +16,53 @@ export interface ProjectUsersResponse {
   currentPage: number
 }
 
+const authHeader = (secretKey: string) => ({
+  headers: { "X-Secret-Key": secretKey },
+})
+
 export const sdkUsersService = {
+
   getUsers: async (
     secretKey: string,
     query = "",
     page = 0,
     size = 10
   ): Promise<ProjectUsersResponse> => {
-    const response = await api.get("/sdk/admin/users/search", {
-      headers: { "X-Secret-Key": secretKey },
-      params: { query, page, size },
-    })
-    return response.data
+
+    const { data } = await api.get<ProjectUsersResponse>(
+      "/sdk/admin/users/search",
+      {
+        ...authHeader(secretKey),
+        params: { query, page, size },
+      }
+    )
+
+    return data
   },
+
 
   disableUser: async (secretKey: string, email: string): Promise<void> => {
-    await api.patch(`/sdk/admin/users/${email}/disable`, {}, {
-      headers: { "X-Secret-Key": secretKey },
-    })
+    await api.patch(
+      `/sdk/admin/users/${encodeURIComponent(email)}/disable`,
+      {},
+      authHeader(secretKey)
+    )
   },
+
 
   enableUser: async (secretKey: string, email: string): Promise<void> => {
-    await api.patch(`/sdk/admin/users/${email}/enable`, {}, {
-      headers: { "X-Secret-Key": secretKey },
-    })
+    await api.patch(
+      `/sdk/admin/users/${encodeURIComponent(email)}/enable`,
+      {},
+      authHeader(secretKey)
+    )
   },
 
+
   deleteUser: async (secretKey: string, email: string): Promise<void> => {
-    await api.delete(`/sdk/admin/users/${email}`, {
-      headers: { "X-Secret-Key": secretKey },
-    })
+    await api.delete(
+      `/sdk/admin/users/${encodeURIComponent(email)}`,
+      authHeader(secretKey)
+    )
   },
 }

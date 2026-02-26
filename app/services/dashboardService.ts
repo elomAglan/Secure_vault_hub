@@ -1,4 +1,8 @@
-import api from "@/lib/api"
+import api from '@/lib/api'
+
+/* =========================================================
+   TYPES
+   ========================================================= */
 
 export interface UserGrowth {
   month: string
@@ -19,9 +23,23 @@ export interface DashboardStats {
   loginActivity: LoginActivity[]
 }
 
-export const dashboardService = {
-  getStats: async (): Promise<DashboardStats> => {
-    const response = await api.get("/api/dashboard/stats")
-    return response.data
-  },
+/* =========================================================
+   SERVICE (plus robuste + typé + perf)
+   ========================================================= */
+
+class DashboardService {
+  async getStats(signal?: AbortSignal): Promise<DashboardStats> {
+    const { data } = await api.get<DashboardStats>(
+      '/api/dashboard/stats',
+      { signal }
+    )
+
+    return data
+  }
 }
+
+/* =========================================================
+   SINGLETON (évite recréation)
+   ========================================================= */
+
+export const dashboardService = new DashboardService()

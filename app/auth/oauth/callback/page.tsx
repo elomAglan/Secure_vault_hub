@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, Suspense } from 'react'
+import { useEffect, Suspense, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
 import { saveTokens } from '@/lib/api'
@@ -9,9 +9,12 @@ import { Loader2 } from 'lucide-react'
 function OAuthCallbackContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { login } = useAuthStore()
+  const hasHandled = useRef(false)
 
   useEffect(() => {
+    if (hasHandled.current) return
+    hasHandled.current = true
+
     const accessToken = searchParams.get('accessToken')
     const refreshToken = searchParams.get('refreshToken')
     const email = searchParams.get('email')
@@ -24,10 +27,8 @@ function OAuthCallbackContent() {
       return
     }
 
-    // Sauvegarde les tokens
     saveTokens(accessToken, refreshToken, true)
 
-    // Met à jour le store manuellement
     useAuthStore.setState({
       user: { email, firstName, lastName, role: 'USER' },
       isAuthenticated: true,
@@ -52,4 +53,4 @@ export default function OAuthCallbackPage() {
       <OAuthCallbackContent />
     </Suspense>
   )
-} 
+}
