@@ -4,11 +4,8 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
    STORAGE HELPERS
 ====================================================== */
 
-const getStorage = (remember: boolean) =>
-  remember ? localStorage : sessionStorage;
-
-const getToken = (key: string) =>
-  localStorage.getItem(key) || sessionStorage.getItem(key);
+const getStorage = (remember: boolean) => remember ? localStorage : sessionStorage;
+const getToken = (key: string) => localStorage.getItem(key) || sessionStorage.getItem(key);
 
 const setClientCookie = (name: string, value: string, remember: boolean) => {
   if (typeof document === "undefined") return;
@@ -22,13 +19,8 @@ const clearClientCookie = (name: string) => {
   document.cookie = `${name}=; Path=/; Max-Age=0; SameSite=Lax`;
 };
 
-export const saveTokens = (
-  accessToken: string,
-  refreshToken: string,
-  remember: boolean
-) => {
+export const saveTokens = (accessToken: string, refreshToken: string, remember: boolean) => {
   const storage = getStorage(remember);
-
   storage.setItem("accessToken", accessToken);
   storage.setItem("refreshToken", refreshToken);
   setClientCookie("accessToken", accessToken, remember);
@@ -50,9 +42,7 @@ export const clearTokens = () => {
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  headers: { "Content-Type": "application/json" },
 });
 
 /* ======================================================
@@ -61,67 +51,54 @@ const api = axios.create({
 
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = getToken("accessToken");
-
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-
   return config;
 });
 
 /* ======================================================
-   REFRESH LOGIC (anti race-condition)
+   RESPONSE INTERCEPTOR -> auto refresh
 ====================================================== */
 
 let isRefreshing = false;
-let failedQueue: {
-  resolve: (token: string) => void;
-  reject: (err: unknown) => void;
-}[] = [];
+let failedQueue: { resolve: (token: string) => void; reject: (err: unknown) => void }[] = [];
 
 const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue.forEach((prom) => {
     if (error) prom.reject(error);
     else prom.resolve(token as string);
   });
-
   failedQueue = [];
 };
-
-/* ======================================================
-   RESPONSE INTERCEPTOR -> auto refresh
-====================================================== */
 
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const originalRequest: any = error.config;
-
     if (!originalRequest) return Promise.reject(error);
 
     const status = error.response?.status;
 
-    // Refresh only on 401. A 403 usually means forbidden (role/permission), not expired session.
+    // Si c'est pas une 401, juste rejeter l'erreur et laisser le composant gérer
     if (status !== 401) {
       return Promise.reject(error);
     }
 
-    // Avoid refresh loops and do not refresh on auth endpoints.
+    // Ne jamais refresh sur ces endpoints, juste renvoyer l'erreur
     if (
-      originalRequest.url?.includes("/auth/refresh") ||
       originalRequest.url?.includes("/auth/login") ||
       originalRequest.url?.includes("/auth/register") ||
-      originalRequest.url?.includes("/auth/logout")
+      originalRequest.url?.includes("/auth/logout") ||
+      originalRequest.url?.includes("/auth/refresh")
     ) {
-      clearTokens();
-      window.location.href = "/auth/login";
-      return Promise.reject(error);
+      return Promise.reject(error); // ❌ Pas de redirect automatique
     }
 
+    // Evite les boucles
     if (originalRequest._retry) {
       clearTokens();
-      window.location.href = "/auth/login";
-      return Promise.reject(error);
+      return Promise.reject(error); // on laisse le composant gérer le redirect si besoin
     }
 
     if (isRefreshing) {
@@ -139,31 +116,22 @@ api.interceptors.response.use(
 
     try {
       const refreshToken = getToken("refreshToken");
-
       if (!refreshToken) {
         clearTokens();
-        window.location.href = "/auth/login";
         return Promise.reject(error);
       }
 
       const response = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/api/auth/refresh`,
         { refreshToken },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
+        { headers: { "Content-Type": "application/json" } }
       );
 
-      // Support both { accessToken } and { data: { accessToken } } payloads.
       const payload: any = response.data?.data ?? response.data;
       const accessToken = payload?.accessToken;
       const newRefreshToken = payload?.refreshToken ?? refreshToken;
 
-      if (!accessToken) {
-        throw new Error("Invalid refresh response");
-      }
+      if (!accessToken) throw new Error("Invalid refresh response");
 
       const inLocal = !!localStorage.getItem("refreshToken");
       saveTokens(accessToken, newRefreshToken, inLocal);
@@ -172,13 +140,11 @@ api.interceptors.response.use(
 
       originalRequest.headers = originalRequest.headers ?? {};
       originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-
       return api(originalRequest);
     } catch (err) {
       processQueue(err, null);
       clearTokens();
-      window.location.href = "/auth/login";
-      return Promise.reject(err);
+      return Promise.reject(err); // ❌ on laisse le composant afficher le message
     } finally {
       isRefreshing = false;
     }

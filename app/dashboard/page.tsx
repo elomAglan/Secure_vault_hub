@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -17,13 +16,12 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts'
-// Nouveaux imports d'icônes plus pro
 import { 
-  UserPlus,      // Pour les utilisateurs (croissance)
-  Zap,           // Pour les sessions actives (énergie/temps réel)
-  ShieldCheck,   // Pour les connexions (sécurité/réussite)
-  LayoutGrid,    // Pour les projets (organisation)
-  RefreshCcw     // Version plus moderne du refresh
+  UserPlus, 
+  Zap, 
+  ShieldCheck, 
+  LayoutGrid, 
+  RefreshCcw 
 } from 'lucide-react'
 
 import { dashboardService, DashboardStats } from '@/app/services/dashboardService'
@@ -37,7 +35,6 @@ export default function DashboardPage() {
   const loadStats = async () => {
     setIsLoading(true)
     setError(null)
-
     try {
       const data = await dashboardService.getStats()
       setStats(data)
@@ -55,30 +52,29 @@ export default function DashboardPage() {
   }, [])
 
   const statCards = useMemo(() => {
-    if (!stats) return []
-
+    // CORRECTION ICI : Utilisation de ?? 0 pour éviter le crash au premier rendu
     return [
       {
         label: 'Utilisateurs Totaux',
-        value: stats.totalUsers.toLocaleString(),
+        value: (stats?.totalUsers ?? 0).toLocaleString(),
         icon: UserPlus,
         color: 'text-blue-500',
       },
       {
         label: 'Sessions Actives',
-        value: stats.activeSessions.toLocaleString(),
+        value: (stats?.activeSessions ?? 0).toLocaleString(),
         icon: Zap,
         color: 'text-green-500',
       },
       {
         label: 'Connexions Totales',
-        value: stats.totalLogins.toLocaleString(),
+        value: (stats?.totalLogins ?? 0).toLocaleString(),
         icon: ShieldCheck,
         color: 'text-purple-500',
       },
       {
         label: 'Projets Totaux',
-        value: stats.totalProjects.toLocaleString(),
+        value: (stats?.totalProjects ?? 0).toLocaleString(),
         icon: LayoutGrid,
         color: 'text-orange-500',
       },
@@ -157,7 +153,7 @@ export default function DashboardPage() {
                 name="Utilisateurs"
                 type="monotone"
                 dataKey="users"
-                stroke="#3b82f6" // Blue-500 direct pour plus de punch
+                stroke="#3b82f6"
                 strokeWidth={3}
                 dot={{ fill: '#3b82f6', r: 4 }}
                 activeDot={{ r: 6, strokeWidth: 0 }}
@@ -178,7 +174,7 @@ export default function DashboardPage() {
               <Bar
                 name="Connexions"
                 dataKey="logins"
-                fill="#8b5cf6" // Purple-500
+                fill="#8b5cf6"
                 radius={[4, 4, 0, 0]}
               />
             </BarChart>

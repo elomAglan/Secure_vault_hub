@@ -20,6 +20,7 @@ interface AuthState {
   login: (data: LoginData, remember?: boolean) => Promise<void>
   logout: () => Promise<void>
   clearError: () => void
+  setError: (message: string | null) => void
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -30,12 +31,15 @@ export const useAuthStore = create<AuthState>()(
       isLoading: false,
       error: null,
 
+      setError: (message) => set({ error: message }),
+      clearError: () => set({ error: null }),
+
       register: async (data) => {
         set({ isLoading: true, error: null })
         try {
           const response = await authApi.register(data)
           if (!response?.accessToken || !response?.refreshToken) {
-            throw new Error("Reponse d'inscription invalide")
+            throw new Error("Réponse d'inscription invalide")
           }
           saveTokens(response.accessToken, response.refreshToken, false)
           set({
@@ -49,11 +53,16 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
           })
           appToast.success("Compte créé avec succès", `Bienvenue, ${response.firstName}.`)
-        } catch (error: any) {
-          const message = error.response?.data?.message || error?.message || "Erreur lors de l'inscription"
+        } catch (err: any) {
+          // Gestion plus complète des erreurs
+          let message = "Erreur lors de l'inscription."
+          if (err.response?.status === 400) message = err.response.data?.message || "Email déjà utilisé."
+          else if (!err.response) message = "Impossible de contacter le serveur."
+          else if (err.message) message = err.message
+
           set({ error: message, isLoading: false })
           appToast.error("Inscription échouée", message)
-          throw error
+          throw err
         }
       },
 
@@ -62,7 +71,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           const response = await authApi.login(data)
           if (!response?.accessToken || !response?.refreshToken) {
-            throw new Error("Reponse de connexion invalide")
+            throw new Error("Réponse de connexion invalide")
           }
           saveTokens(response.accessToken, response.refreshToken, remember)
           set({
@@ -76,11 +85,23 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
           })
           appToast.success("Connexion réussie", `Bon retour, ${response.firstName}.`)
-        } catch (error: any) {
-          const message = error.response?.data?.message || error?.message || "Email ou mot de passe incorrect"
+        } catch (err: any) {
+          let message = "Une erreur est survenue lors de la connexion."
+          if (!err.response) {
+            message = "Impossible de contacter le serveur."
+          } else if (err.response.status === 401) {
+            message = "Email ou mot de passe incorrect."
+          } else if (err.response.status === 403) {
+            message = "Compte désactivé. Contactez l'administrateur."
+          } else if (err.response.data?.message) {
+            message = err.response.data.message
+          } else if (err.message) {
+            message = err.message
+          }
+
           set({ error: message, isLoading: false })
           appToast.error("Connexion échouée", message)
-          throw error
+          throw err
         }
       },
 
@@ -89,13 +110,13 @@ export const useAuthStore = create<AuthState>()(
         try {
           await authApi.logout()
           appToast.info("Déconnexion réussie", "À bientôt sur SecureVault.")
+        } catch {
+          // Ignore si le logout échoue côté back
         } finally {
           clearTokens()
           set({ user: null, isAuthenticated: false, isLoading: false })
         }
       },
-
-      clearError: () => set({ error: null }),
     }),
     {
       name: "auth-storage",
