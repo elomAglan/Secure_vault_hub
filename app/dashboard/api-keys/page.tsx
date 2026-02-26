@@ -2,300 +2,207 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { 
+  Key, Copy, Check, Eye, EyeOff, ShieldCheck, 
+  Plus, ChevronRight, MousePointerClick, Lock
+} from 'lucide-react'
 
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  Search,
-  Plus,
-  MoreVertical,
-  Key,
-  Copy,
-  Check,
-  Eye,
-  EyeOff,
-  Trash2,
-  ShieldCheck,
-} from 'lucide-react'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 
 import { useProjectStore } from '@/store/projectStore'
 import { appToast } from '@/lib/toast'
 
-type ApiKeyType = 'Public' | 'Secret'
-
-interface ApiKeyItem {
-  id: string
-  projectName: string
-  key: string
-  type: ApiKeyType
-  createdAt: string
-  status: 'active'
-}
+const cn = (...inputs: any[]) => inputs.filter(Boolean).join(' ')
 
 export default function ApiKeysPage() {
   const router = useRouter()
   const { projects, fetchProjects, isLoading, error } = useProjectStore()
 
-  const [searchTerm, setSearchTerm] = useState('')
-  const [copiedId, setCopiedId] = useState<string | null>(null)
-  const [showSecretId, setShowSecretId] = useState<string | null>(null)
+  const [selectedProjectId, setSelectedProjectId] = useState<string | number | null>(null)
+  const [showSecret, setShowSecret] = useState(false)
+  const [copiedType, setCopiedType] = useState<'pk' | 'sk' | null>(null)
 
   useEffect(() => {
     void fetchProjects()
   }, [fetchProjects])
 
-  const apiKeys = useMemo<ApiKeyItem[]>(() => {
-    return projects.flatMap((project) => {
-      const keys: ApiKeyItem[] = [
-        {
-          id: `pk-${project.id}`,
-          projectName: project.name,
-          key: project.publicKey,
-          type: 'Public',
-          createdAt: project.createdAt,
-          status: 'active',
-        },
-      ]
+  const selectedProject = useMemo(() => 
+    projects.find(p => p.id === selectedProjectId), 
+  [projects, selectedProjectId])
 
-      if (project.owner) {
-        keys.push({
-          id: `sk-${project.id}`,
-          projectName: project.name,
-          key: project.secretKey,
-          type: 'Secret',
-          createdAt: project.createdAt,
-          status: 'active',
-        })
-      }
-
-      return keys
-    })
-  }, [projects])
-
-  const filteredKeys = useMemo(() => {
-    const query = searchTerm.toLowerCase().trim()
-
-    if (!query) return apiKeys
-
-    return apiKeys.filter((item) =>
-      [item.projectName, item.key, item.type].some((value) =>
-        value.toLowerCase().includes(query)
-      )
-    )
-  }, [apiKeys, searchTerm])
-
-  const copyToClipboard = async (id: string, text: string) => {
+  const copyToClipboard = async (text: string, type: 'pk' | 'sk') => {
     try {
       await navigator.clipboard.writeText(text)
-      setCopiedId(id)
-      setTimeout(() => setCopiedId(null), 2000)
+      setCopiedType(type)
+      setTimeout(() => setCopiedType(null), 2000)
+      appToast.success('Copié !', 'Clé prête à être collée.')
     } catch {
-      appToast.error('Copie impossible', 'Le presse-papiers n est pas accessible.')
+      appToast.error('Erreur', 'Accès au presse-papiers refusé.')
     }
   }
 
-  const handleRevokeClick = () => {
-    appToast.info(
-      'Revocation non disponible',
-      'Ajoutez un endpoint backend de rotation/revocation pour activer cette action.'
-    )
-  }
-
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
+    <div className="max-w-[1100px] mx-auto space-y-8 animate-in fade-in duration-500">
+      
+      {/* HEADER */}
+      <div className="flex justify-between items-center border-b pb-6">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            <Key className="h-8 w-8 text-primary" />
-            API Keys
+          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+            <Lock className="h-6 w-6 text-primary" />
+            Identifiants API
           </h1>
-          <p className="mt-2 text-foreground/60">
-            Utilisez ces cles pour authentifier vos requetes SDK et API.
+          <p className="text-muted-foreground text-sm">
+            Sélectionnez une application pour gérer ses clés d'accès.
           </p>
         </div>
-        <Button
-          className="bg-primary hover:bg-primary/90"
-          onClick={() => router.push('/first_app')}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Create New Key
+        <Button onClick={() => router.push('/first_app')} size="sm">
+          <Plus className="mr-2 h-4 w-4" /> Nouveau Projet
         </Button>
       </div>
 
-      <Card className="bg-amber-50 border-amber-200 p-4 flex items-start gap-3">
-        <ShieldCheck className="h-5 w-5 text-amber-600 mt-0.5" />
-        <div className="text-sm text-amber-800">
-          <p className="font-semibold">Gardez vos cles secretes en securite.</p>
-          <p>
-            Ne partagez jamais vos cles secretes (sk_...) cote client ou dans des
-            depots publics.
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+        
+        {/* LISTE DES PROJETS (4/12) */}
+        <div className="md:col-span-4 space-y-3">
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">
+            Vos Applications ({projects.length})
           </p>
-        </div>
-      </Card>
-
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/40" />
-        <Input
-          placeholder="Rechercher une cle par projet, type ou valeur..."
-          className="pl-10"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
-
-      {error && (
-        <div className="bg-red-50 border border-red-100 text-red-600 text-sm p-4 rounded-xl">
-          {error}
-        </div>
-      )}
-
-      {isLoading && (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
-          {[1, 2, 3, 4].map((item) => (
-            <Card key={item} className="border border-border p-6 animate-pulse">
-              <div className="h-5 bg-slate-100 rounded w-2/3 mb-4" />
-              <div className="h-3 bg-slate-100 rounded w-1/3 mb-6" />
-              <div className="h-10 bg-slate-100 rounded w-full" />
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {!isLoading && (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
-          {filteredKeys.map((apiKey) => (
-            <Card
-              key={apiKey.id}
-              className="border border-border p-6 hover:shadow-md transition-all group"
-            >
-              <div className="mb-6 flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={cn(
-                      'p-2 rounded-lg',
-                      apiKey.type === 'Secret' ? 'bg-red-50' : 'bg-blue-50'
-                    )}
-                  >
-                    <Key
+          <div className="space-y-2">
+            {isLoading ? (
+              [1, 2, 3].map(i => <div key={i} className="h-14 w-full bg-muted/50 animate-pulse rounded-xl" />)
+            ) : (
+              projects.map((project) => (
+                <button
+                  key={project.id}
+                  onClick={() => {
+                    setSelectedProjectId(project.id)
+                    setShowSecret(false)
+                  }}
+                  className={cn(
+                    "w-full flex items-center justify-between p-4 rounded-xl border transition-all duration-200 group",
+                    selectedProjectId === project.id 
+                      ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20 scale-[1.02]" 
+                      : "bg-card border-border hover:border-primary/50 hover:bg-muted/50"
+                  )}
+                >
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <div 
                       className={cn(
-                        'h-5 w-5',
-                        apiKey.type === 'Secret' ? 'text-red-600' : 'text-blue-600'
+                        "h-2 w-2 rounded-full shrink-0 ring-4",
+                        selectedProjectId === project.id ? "bg-white ring-white/20" : "ring-transparent"
                       )}
+                      style={selectedProjectId !== project.id ? { backgroundColor: project.primaryColor } : {}} 
                     />
+                    <span className="text-sm font-bold truncate">{project.name}</span>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-lg">{apiKey.projectName}</h3>
-                    <p className="text-xs text-foreground/40 italic">
-                      Creee le {new Date(apiKey.createdAt).toLocaleDateString('fr-FR')}
-                    </p>
+                  <ChevronRight className={cn(
+                    "h-4 w-4 transition-transform opacity-50",
+                    selectedProjectId === project.id ? "rotate-90 opacity-100" : "group-hover:translate-x-1"
+                  )} />
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* ZONE D'AFFICHAGE (8/12) */}
+        <div className="md:col-span-8 min-h-[400px]">
+          {!selectedProject ? (
+            /* --- ETAT VIDE (L'INDICATEUR UX) --- */
+            <div className="h-full flex flex-col items-center justify-center border-2 border-dashed rounded-3xl bg-muted/5 p-12 text-center animate-in zoom-in-95 duration-300">
+              <div className="relative mb-6">
+                <div className="absolute -inset-4 bg-primary/10 rounded-full blur-xl animate-pulse" />
+                <MousePointerClick className="h-12 w-12 text-primary relative z-10" />
+              </div>
+              <h3 className="text-lg font-bold">Aucune sélection</h3>
+              <p className="text-muted-foreground text-sm max-w-[280px] mt-2">
+                Cliquez sur un projet dans la liste de gauche pour afficher ses clés publiques et secrètes.
+              </p>
+            </div>
+          ) : (
+            /* --- AFFICHAGE DES CLES --- */
+            <Card className="p-8 border-border shadow-xl animate-in slide-in-from-bottom-4 duration-300">
+              <div className="flex items-center gap-4 mb-8">
+                <div 
+                  className="h-12 w-12 rounded-2xl flex items-center justify-center text-white shadow-inner"
+                  style={{ backgroundColor: selectedProject.primaryColor }}
+                >
+                  <Key className="h-6 w-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold leading-none">{selectedProject.name}</h2>
+                  <p className="text-sm text-muted-foreground mt-1">Identifiants de sécurité</p>
+                </div>
+              </div>
+
+              <div className="space-y-8">
+                {/* Clé Publique */}
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <label className="text-[11px] font-black uppercase tracking-tighter text-muted-foreground">Public Key</label>
+                    <Badge variant="secondary" className="text-[10px]">Côté Client</Badge>
+                  </div>
+                  <div className="flex gap-2">
+                    <Input 
+                      readOnly 
+                      value={selectedProject.publicKey}
+                      className="font-mono text-xs bg-muted/30 border-none h-11 focus-visible:ring-1 ring-primary/20"
+                    />
+                    <Button 
+                      variant="outline" 
+                      className="h-11 px-4 border-muted hover:bg-primary hover:text-white transition-all"
+                      onClick={() => copyToClipboard(selectedProject.publicKey, 'pk')}
+                    >
+                      {copiedType === 'pk' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </Button>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <Badge variant={apiKey.type === 'Secret' ? 'destructive' : 'outline'}>
-                    {apiKey.type}
-                  </Badge>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        className="text-red-600 flex gap-2 cursor-pointer"
-                        onClick={handleRevokeClick}
+                {/* Clé Secrète */}
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <label className="text-[11px] font-black uppercase tracking-tighter text-muted-foreground">Secret Key</label>
+                    <Badge className="text-[10px] bg-red-500/10 text-red-600 hover:bg-red-500/10 border-none">Serveur Uniquement</Badge>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Input 
+                        readOnly 
+                        type={showSecret ? "text" : "password"}
+                        value={selectedProject.secretKey}
+                        className="font-mono text-xs bg-muted/30 border-none h-11 pr-12 focus-visible:ring-1 ring-primary/20"
+                      />
+                      <button 
+                        onClick={() => setShowSecret(!showSecret)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
                       >
-                        <Trash2 className="h-4 w-4" />
-                        Revoker la cle
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <label className="text-xs font-bold uppercase tracking-wider text-foreground/50">
-                  Token ID
-                </label>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Input
-                      readOnly
-                      value={apiKey.key}
-                      type={apiKey.type === 'Secret' && showSecretId !== apiKey.id ? 'password' : 'text'}
-                      className="font-mono text-sm bg-slate-50 pr-20"
-                    />
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                      {apiKey.type === 'Secret' && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={() =>
-                            setShowSecretId(showSecretId === apiKey.id ? null : apiKey.id)
-                          }
-                        >
-                          {showSecretId === apiKey.id ? (
-                            <EyeOff className="h-3.5 w-3.5" />
-                          ) : (
-                            <Eye className="h-3.5 w-3.5" />
-                          )}
-                        </Button>
-                      )}
+                        {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
                     </div>
+                    <Button 
+                      variant="outline" 
+                      className="h-11 px-4 border-muted hover:bg-primary hover:text-white transition-all"
+                      onClick={() => copyToClipboard(selectedProject.secretKey, 'sk')}
+                    >
+                      {copiedType === 'sk' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </Button>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="shrink-0"
-                    onClick={() => void copyToClipboard(apiKey.id, apiKey.key)}
-                  >
-                    {copiedId === apiKey.id ? (
-                      <Check className="h-4 w-4 text-green-600" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                  </Button>
                 </div>
               </div>
 
-              <div className="mt-6 flex items-center justify-between border-t pt-4">
-                <div className="flex items-center gap-2 text-sm text-foreground/60">
-                  <div
-                    className={cn(
-                      'h-2 w-2 rounded-full',
-                      apiKey.status === 'active' ? 'bg-green-500' : 'bg-red-500'
-                    )}
-                  />
-                  {apiKey.status === 'active' ? 'Operationnelle' : 'Revoquee'}
-                </div>
-                <Button variant="link" className="text-xs h-auto p-0 text-primary">
-                  Voir l usage recent
-                </Button>
+              <div className="mt-10 p-4 bg-amber-50/50 border border-amber-100 rounded-xl flex gap-3">
+                <ShieldCheck className="h-5 w-5 text-amber-600 shrink-0" />
+                <p className="text-[12px] text-amber-900 leading-snug">
+                  La <b>Secret Key</b> permet un accès complet à vos données. Ne l'exposez jamais dans un fichier JS côté navigateur ou sur une application mobile.
+                </p>
               </div>
             </Card>
-          ))}
+          )}
         </div>
-      )}
-
-      {!isLoading && filteredKeys.length === 0 && (
-        <div className="text-center py-20 border-2 border-dashed rounded-3xl">
-          <p className="text-foreground/40">Aucune cle trouvee pour cette recherche.</p>
-        </div>
-      )}
+      </div>
     </div>
   )
-}
-
-function cn(...inputs: Array<string | false | null | undefined>) {
-  return inputs.filter(Boolean).join(' ')
 }

@@ -17,7 +17,14 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts'
-import { Users, Activity, LogIn, FolderKanban, RefreshCw } from 'lucide-react'
+// Nouveaux imports d'icônes plus pro
+import { 
+  UserPlus,      // Pour les utilisateurs (croissance)
+  Zap,           // Pour les sessions actives (énergie/temps réel)
+  ShieldCheck,   // Pour les connexions (sécurité/réussite)
+  LayoutGrid,    // Pour les projets (organisation)
+  RefreshCcw     // Version plus moderne du refresh
+} from 'lucide-react'
 
 import { dashboardService, DashboardStats } from '@/app/services/dashboardService'
 import { appToast } from '@/lib/toast'
@@ -54,25 +61,25 @@ export default function DashboardPage() {
       {
         label: 'Utilisateurs Totaux',
         value: stats.totalUsers.toLocaleString(),
-        icon: Users,
+        icon: UserPlus,
         color: 'text-blue-500',
       },
       {
         label: 'Sessions Actives',
         value: stats.activeSessions.toLocaleString(),
-        icon: Activity,
+        icon: Zap,
         color: 'text-green-500',
       },
       {
         label: 'Connexions Totales',
         value: stats.totalLogins.toLocaleString(),
-        icon: LogIn,
+        icon: ShieldCheck,
         color: 'text-purple-500',
       },
       {
         label: 'Projets Totaux',
         value: stats.totalProjects.toLocaleString(),
-        icon: FolderKanban,
+        icon: LayoutGrid,
         color: 'text-orange-500',
       },
     ]
@@ -99,7 +106,7 @@ export default function DashboardPage() {
           <p className="mt-2 text-foreground/60">Ravi de vous revoir ! Voici vos analyses d'authentification.</p>
         </div>
         <Button variant="outline" onClick={() => void loadStats()} disabled={isLoading}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          <RefreshCcw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
           Actualiser
         </Button>
       </div>
@@ -129,7 +136,7 @@ export default function DashboardPage() {
                   <p className="text-sm font-medium text-foreground/60">{stat.label}</p>
                   <p className="mt-2 text-2xl font-bold">{stat.value}</p>
                 </div>
-                <Icon className={`h-8 w-8 ${stat.color}`} />
+                <Icon className={`h-8 w-8 ${stat.color} opacity-80`} />
               </div>
             </Card>
           )
@@ -150,9 +157,10 @@ export default function DashboardPage() {
                 name="Utilisateurs"
                 type="monotone"
                 dataKey="users"
-                stroke="var(--primary)"
-                strokeWidth={2}
-                dot={{ fill: 'var(--primary)', r: 4 }}
+                stroke="#3b82f6" // Blue-500 direct pour plus de punch
+                strokeWidth={3}
+                dot={{ fill: '#3b82f6', r: 4 }}
+                activeDot={{ r: 6, strokeWidth: 0 }}
               />
             </LineChart>
           </ResponsiveContainer>
@@ -170,8 +178,8 @@ export default function DashboardPage() {
               <Bar
                 name="Connexions"
                 dataKey="logins"
-                fill="var(--primary)"
-                radius={[8, 8, 0, 0]}
+                fill="#8b5cf6" // Purple-500
+                radius={[4, 4, 0, 0]}
               />
             </BarChart>
           </ResponsiveContainer>
@@ -199,11 +207,14 @@ export default function DashboardPage() {
               className="flex items-start justify-between border-b border-border pb-4 last:border-0"
             >
               <div className="flex-1">
-                <p className="font-medium text-sm">login.activity</p>
-                <p className="text-xs text-foreground/60 mt-1">{item.logins} connexion(s)</p>
+                <div className="flex items-center gap-2">
+                   <ShieldCheck className="h-4 w-4 text-purple-500" />
+                   <p className="font-medium text-sm">Auth.success</p>
+                </div>
+                <p className="text-xs text-foreground/60 mt-1">{item.logins} connexion(s) enregistrée(s)</p>
                 <p className="text-xs text-foreground/40 mt-1">{item.date}</p>
               </div>
-              <Badge variant="outline">système</Badge>
+              <Badge variant="secondary" className="font-mono text-[10px]">SYSTEM_LOG</Badge>
             </div>
           ))}
         </div>

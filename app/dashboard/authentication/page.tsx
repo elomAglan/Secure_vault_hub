@@ -1,35 +1,30 @@
 'use client'
 
 import { ComponentType, useEffect, useMemo, useState } from 'react'
+import { 
+  Mail, Github, Wand2, ShieldCheck, Save, 
+  ChevronRight, Fingerprint, LayoutGrid, 
+  LockKeyhole, Zap
+} from 'lucide-react'
 
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Mail, Github, Wand2, Lock } from 'lucide-react'
-
 import { useProjectStore } from '@/store/projectStore'
 import type { AuthProvider } from '@/types/project'
 import { appToast } from '@/lib/toast'
 
 const GoogleIcon = ({ className }: { className?: string }) => (
-  <svg
-    className={className}
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.908 3.152-1.896 4.14-1.236 1.236-3.156 2.472-7.104 2.472-6.24 0-11.232-5.064-11.232-11.304s4.992-11.304 11.232-11.304c3.42 0 6.036 1.344 7.92 3.144l2.256-2.256C18.42 1.152 15.528 0 12.48 0 5.676 0 0 5.7 0 12.6s5.676 12.6 12.48 12.6c3.684 0 6.468-1.2 8.652-3.48 2.244-2.244 2.952-5.412 2.952-7.944 0-.768-.06-1.5-.18-2.184H12.48z" />
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
   </svg>
 )
+
+const cn = (...inputs: any[]) => inputs.filter(Boolean).join(' ')
 
 type AuthMethod = {
   name: string
@@ -41,189 +36,196 @@ type AuthMethod = {
 
 const authMethods: AuthMethod[] = [
   {
-    name: 'Email & Mot de passe',
-    description: 'Permettre aux utilisateurs de s\'inscrire et de se connecter avec un email et un mot de passe',
+    name: 'Email & Password',
+    description: 'Authentification classique avec validation sécurisée.',
     icon: Mail,
     provider: 'PASSWORD',
     supported: true,
   },
   {
-    name: 'Google OAuth',
-    description: 'Permettre aux utilisateurs de se connecter via leur compte Google',
+    name: 'Google Login',
+    description: 'Connexion rapide via les comptes Google.',
     icon: GoogleIcon,
     provider: 'GOOGLE',
     supported: true,
   },
   {
-    name: 'GitHub OAuth',
-    description: 'Permettre aux utilisateurs de se connecter via leur compte GitHub',
+    name: 'GitHub Connector',
+    description: 'Idéal pour les développeurs et outils tech.',
     icon: Github,
     provider: 'GITHUB',
     supported: true,
   },
   {
     name: 'Magic Links',
-    description: 'Envoyer des liens de connexion magiques sans mot de passe par email',
+    description: 'Connexion sans mot de passe via lien email.',
     icon: Wand2,
     supported: false,
   },
   {
-    name: 'Authentification à deux facteurs',
-    description: 'Exiger un second facteur pour vérifier l\'identité de l\'utilisateur',
-    icon: Lock,
+    name: 'Biométrie / Passkeys',
+    description: 'FaceID, TouchID ou clés physiques.',
+    icon: Fingerprint,
+    supported: false,
+  },
+  {
+    name: 'Two-Factor (2FA)',
+    description: 'Couche de sécurité TOTP supplémentaire.',
+    icon: ShieldCheck,
     supported: false,
   },
 ]
 
-const isAuthProvider = (value: string): value is AuthProvider =>
-  value === 'PASSWORD' || value === 'GOOGLE' || value === 'GITHUB'
-
 export default function AuthenticationPage() {
-  const {
-    projects,
-    fetchProjects,
-    updateProject,
-    isLoading,
-    error,
-  } = useProjectStore()
-
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('')
+  const { projects, fetchProjects, updateProject, isLoading } = useProjectStore()
+  const [selectedId, setSelectedId] = useState<string>('')
   const [providers, setProviders] = useState<AuthProvider[]>(['PASSWORD'])
   const [isSaving, setIsSaving] = useState(false)
 
-  useEffect(() => {
-    void fetchProjects()
-  }, [fetchProjects])
+  useEffect(() => { void fetchProjects() }, [fetchProjects])
 
   useEffect(() => {
-    if (!projects.length) return
-    if (!selectedProjectId) setSelectedProjectId(String(projects[0].id))
-  }, [projects, selectedProjectId])
+    if (projects.length && !selectedId) setSelectedId(String(projects[0].id))
+  }, [projects, selectedId])
 
-  const selectedProject = useMemo(
-    () => projects.find((p) => String(p.id) === selectedProjectId),
-    [projects, selectedProjectId]
-  )
+  const selectedProject = useMemo(() => projects.find((p) => String(p.id) === selectedId), [projects, selectedId])
 
   useEffect(() => {
-    if (!selectedProject) return
-
-    const projectProviders = selectedProject.authProviders.filter(isAuthProvider)
-    const nextProviders: AuthProvider[] = projectProviders.includes('PASSWORD')
-      ? projectProviders
-      : ['PASSWORD', ...projectProviders]
-
-    setProviders(nextProviders)
+    if (selectedProject) setProviders(selectedProject.authProviders)
   }, [selectedProject])
 
   const toggleProvider = (provider: AuthProvider) => {
     if (provider === 'PASSWORD') return
-
-    setProviders((prev) =>
-      prev.includes(provider)
-        ? prev.filter((p) => p !== provider)
-        : [...prev, provider]
-    )
+    setProviders(prev => prev.includes(provider) ? prev.filter(p => p !== provider) : [...prev, provider])
   }
 
   const handleSave = async () => {
     if (!selectedProject) return
-
     setIsSaving(true)
     try {
-      await updateProject(selectedProject.id, {
-        name: selectedProject.name,
-        authProviders: providers,
-        theme: selectedProject.theme,
-        primaryColor: selectedProject.primaryColor,
-      })
-      appToast.success('Paramètres d\'authentification mis à jour')
+      await updateProject(selectedProject.id, { ...selectedProject, authProviders: providers })
+      appToast.success('Modifications enregistrées')
     } catch {
-      appToast.error('Échec de la mise à jour des paramètres')
-    } finally {
-      setIsSaving(false)
-    }
+      appToast.error('Erreur lors de la sauvegarde')
+    } finally { setIsSaving(false) }
   }
 
   return (
-    <div className="max-w-3xl space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">Paramètres d'Authentification</h1>
-        <p className="mt-2 text-foreground/60">
-          Configurez les méthodes d'authentification disponibles pour votre application
-        </p>
-      </div>
-
-      <Card className="border border-border p-6">
-        <Label className="mb-2 block">Projet</Label>
-        <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
-          <SelectTrigger className="max-w-md">
-            <SelectValue placeholder="Sélectionnez un projet" />
-          </SelectTrigger>
-          <SelectContent>
-            {projects.map((project) => (
-              <SelectItem key={project.id} value={String(project.id)}>
-                {project.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </Card>
-
-      {error && (
-        <div className="bg-red-50 border border-red-100 text-red-600 text-sm p-4 rounded-xl">
-          {error}
+    <div className="max-w-[1100px] mx-auto space-y-8 animate-in fade-in duration-700 pb-12">
+      
+      {/* HEADER - Plus de blanc, moins de contraste */}
+      <div className="flex justify-between items-center border-b border-slate-100 pb-8">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-800 tracking-tight flex items-center gap-3">
+            <div className="p-2 bg-slate-50 rounded-xl">
+              <LockKeyhole className="h-6 w-6 text-slate-400" />
+            </div>
+            Authentification
+          </h1>
+          <p className="text-slate-500 text-sm mt-1">Configurez les méthodes d'accès pour vos utilisateurs.</p>
         </div>
-      )}
+        <Button 
+          onClick={handleSave} 
+          disabled={isSaving || !selectedProject} 
+          className="rounded-full px-6 shadow-md hover:shadow-lg transition-all"
+        >
+          <Save className="mr-2 h-4 w-4" /> {isSaving ? 'Enregistrement...' : 'Enregistrer'}
+        </Button>
+      </div>
 
-      <div className="space-y-4">
-        {authMethods.map((method) => {
-          const Icon = method.icon
-          const isEnabled = method.provider ? providers.includes(method.provider) : false
-          const isPasswordMethod = method.provider === 'PASSWORD'
-
-          return (
-            <Card key={method.name} className="border border-border p-6">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-4">
-                  <Icon className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
-                  <div>
-                    <h3 className="font-semibold">{method.name}</h3>
-                    <p className="text-sm text-foreground/60 mt-1">
-                      {method.description}
-                    </p>
-                    <div className="mt-2">
-                      {!method.supported ? (
-                        <Badge variant="secondary">Service non intégré</Badge>
-                      ) : isEnabled ? (
-                        <Badge>Activé</Badge>
-                      ) : (
-                        <Badge variant="secondary">Désactivé</Badge>
-                      )}
-                    </div>
-                  </div>
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-10">
+        
+        {/* SÉLECTEUR DE PROJET (GAUCHE) */}
+        <div className="md:col-span-4 space-y-4">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 px-1">Projet sélectionné</p>
+          <div className="space-y-2">
+            {projects.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => setSelectedId(String(p.id))}
+                className={cn(
+                  "w-full flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 text-left",
+                  selectedId === String(p.id) 
+                    ? "bg-white border-primary/20 shadow-xl shadow-slate-200/50 ring-1 ring-primary/5" 
+                    : "bg-transparent border-transparent hover:bg-slate-50 text-slate-500 hover:text-slate-900"
+                )}
+              >
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <div 
+                    className={cn(
+                      "h-2 w-2 rounded-full transition-all",
+                      selectedId === String(p.id) ? "bg-primary scale-125 shadow-[0_0_8px_rgba(var(--primary),0.4)]" : "bg-slate-300"
+                    )} 
+                  />
+                  <span className={cn("text-sm font-medium", selectedId === String(p.id) && "font-bold text-slate-900")}>
+                    {p.name}
+                  </span>
                 </div>
+                <ChevronRight className={cn("h-4 w-4 transition-all", selectedId === String(p.id) ? "text-primary opacity-100" : "opacity-0")} />
+              </button>
+            ))}
+          </div>
+        </div>
 
-                <Switch
-                  checked={isEnabled}
-                  onCheckedChange={() => method.provider && toggleProvider(method.provider)}
-                  disabled={!method.supported || isPasswordMethod || !selectedProject || isLoading || isSaving}
-                />
+        {/* MÉTHODES D'AUTH (DROITE) */}
+        <div className="md:col-span-8 space-y-4">
+          {!selectedProject ? (
+              <div className="h-64 flex flex-col items-center justify-center border-2 border-dashed border-slate-100 rounded-[2rem] bg-slate-50/30">
+                <LayoutGrid className="h-10 w-10 text-slate-200 mb-4" />
+                <p className="text-slate-400 text-sm">Sélectionnez une application à gauche.</p>
               </div>
-            </Card>
-          )
-        })}
-      </div>
+          ) : (
+            authMethods.map((method) => {
+              const Icon = method.icon
+              const isEnabled = method.provider ? providers.includes(method.provider) : false
+              const isDefault = method.provider === 'PASSWORD'
 
-      <div className="rounded-lg border border-border bg-background/50 p-4">
-        <p className="text-sm text-foreground/60">
-          Seules les méthodes ayant un service backend disponible sont connectées dans cette page.
-        </p>
-      </div>
+              return (
+                <Card key={method.name} className={cn(
+                  "group relative overflow-hidden border-slate-100 rounded-2xl transition-all duration-300 shadow-sm hover:shadow-md",
+                  isEnabled ? "bg-white ring-1 ring-primary/5 border-primary/10" : "bg-slate-50/20"
+                )}>
+                  <div className="p-5 flex items-center justify-between">
+                    <div className="flex items-center gap-5">
+                      <div className={cn(
+                        "h-12 w-12 rounded-2xl flex items-center justify-center transition-all duration-500",
+                        isEnabled ? "bg-primary text-white shadow-lg shadow-primary/20 rotate-0" : "bg-slate-100 text-slate-400 group-hover:bg-slate-200"
+                      )}>
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className={cn("text-sm font-semibold tracking-tight", isEnabled ? "text-slate-900" : "text-slate-600")}>
+                            {method.name}
+                          </h3>
+                          {!method.supported && <Badge variant="secondary" className="text-[8px] h-4 bg-slate-100 text-slate-400 border-none">Bientôt</Badge>}
+                          {isDefault && <Badge className="text-[8px] h-4 bg-blue-50 text-blue-500 border-none">Défaut</Badge>}
+                        </div>
+                        <p className="text-xs text-slate-400 max-w-[320px] leading-relaxed italic">{method.description}</p>
+                      </div>
+                    </div>
+                    
+                    <Switch
+                      checked={isEnabled}
+                      disabled={!method.supported || isDefault || isSaving}
+                      onCheckedChange={() => method.provider && toggleProvider(method.provider)}
+                      className="data-[state=checked]:bg-primary"
+                    />
+                  </div>
+                </Card>
+              )
+            })
+          )}
 
-      <Button onClick={() => void handleSave()} disabled={!selectedProject || isLoading || isSaving}>
-        {isSaving ? 'Enregistrement...' : 'Enregistrer les modifications'}
-      </Button>
+          {/* FOOTER INFO - Subtil et clair */}
+          <div className="flex items-center gap-4 p-5 bg-blue-50/30 rounded-2xl border border-blue-100/50 mt-6">
+            <Zap className="h-5 w-5 text-blue-400 shrink-0" />
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              Pour Google et GitHub, assurez-vous d'avoir configuré les <span className="font-semibold text-slate-700 underline underline-offset-2">Redirect URIs</span> dans vos consoles développeurs respectives.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

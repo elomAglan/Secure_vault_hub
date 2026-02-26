@@ -1,20 +1,26 @@
 'use client'
 
+import { useState, useEffect, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
+import { 
+  Search, Plus, Settings, MoreHorizontal, Trash2, 
+  Calendar, LayoutGrid, ShieldCheck 
+} from 'lucide-react'
+
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Search, Plus, Settings, MoreVertical, Trash2, Copy, Check, Key } from 'lucide-react'
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { useProjectStore } from '@/store/projectStore'
 import type { Project } from '@/app/services/projectService'
 import EditProjectModal from '@/components/Projets/EditProjectModal'
+
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
 import {
   Dialog,
@@ -28,293 +34,196 @@ import {
 export default function ProjectsPage() {
   const router = useRouter()
   const { projects, fetchProjects, deleteProject, isLoading, error } = useProjectStore()
+  
   const [searchTerm, setSearchTerm] = useState('')
-  const [copiedId, setCopiedId] = useState<string | null>(null)
   const [projectToView, setProjectToView] = useState<Project | null>(null)
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null)
   const [deleteConfirmName, setDeleteConfirmName] = useState('')
   const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
-    fetchProjects()
-  }, [])
+    void fetchProjects()
+  }, [fetchProjects])
 
-  const filteredProjects = projects.filter((p) =>
-    p.name.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
-  const copyToClipboard = (text: string, id: string) => {
-    navigator.clipboard.writeText(text)
-    setCopiedId(id)
-    setTimeout(() => setCopiedId(null), 2000)
-  }
-
-  const openSettingsDialog = (project: Project) => {
-    setProjectToView(project)
-  }
-
-  const closeSettingsDialog = () => {
-    setProjectToView(null)
-  }
-
-  const openDeleteDialog = (project: Project) => {
-    setProjectToDelete(project)
-    setDeleteConfirmName('')
-  }
-
-  const closeDeleteDialog = () => {
-    if (isDeleting) return
-    setProjectToDelete(null)
-    setDeleteConfirmName('')
-  }
+  const filteredProjects = useMemo(() => {
+    return projects.filter((p) =>
+      p.name.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  }, [projects, searchTerm])
 
   const handleDelete = async () => {
-    if (!projectToDelete) return
-    if (deleteConfirmName.trim() !== projectToDelete.name) return
-
+    if (!projectToDelete || deleteConfirmName.trim() !== projectToDelete.name) return
     setIsDeleting(true)
     try {
       await deleteProject(projectToDelete.id)
-      closeDeleteDialog()
+      setProjectToDelete(null)
+      setDeleteConfirmName('')
     } finally {
       setIsDeleting(false)
     }
   }
 
   const providerColors: Record<string, string> = {
-    PASSWORD: 'bg-blue-50 text-blue-600 border-blue-100',
-    GOOGLE: 'bg-red-50 text-red-600 border-red-100',
-    GITHUB: 'bg-slate-50 text-slate-600 border-slate-200',
+    PASSWORD: 'bg-blue-50 text-blue-700 border-blue-100',
+    GOOGLE: 'bg-red-50 text-red-700 border-red-100',
+    GITHUB: 'bg-slate-100 text-slate-700 border-slate-200',
   }
 
   return (
-    <div className="space-y-8">
+    <div className="max-w-[1200px] mx-auto space-y-6 animate-in fade-in duration-500">
+      
       {/* HEADER */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Projets</h1>
-          <p className="mt-2 text-foreground/60">Gérez vos projets d'authentification</p>
+          <h1 className="text-2xl font-bold tracking-tight">Mes Projets</h1>
+          <p className="text-sm text-muted-foreground italic">
+            {filteredProjects.length} application(s) répertoriée(s)
+          </p>
         </div>
-        <Button onClick={() => router.push('/first_app')}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nouveau Projet
+        <Button 
+          onClick={() => router.push('/first_app')} 
+          className="shadow-sm font-semibold"
+        >
+          <Plus className="mr-2 h-4 w-4" /> Nouveau Projet
         </Button>
       </div>
 
       {/* SEARCH */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/40" />
+      <div className="relative group">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
         <Input
-          placeholder="Rechercher un projet..."
-          className="pl-10"
+          placeholder="Rechercher par nom..."
+          className="pl-9 bg-card border-border/60 focus:border-primary/50 transition-all"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
 
-      {/* ERREUR */}
       {error && (
-        <div className="bg-red-50 border border-red-100 text-red-600 text-sm p-4 rounded-xl">
+        <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive rounded-lg text-xs font-medium">
           {error}
         </div>
       )}
 
-      {/* LOADING */}
-      {isLoading && (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="border border-border p-6 animate-pulse">
-              <div className="h-4 bg-slate-100 rounded w-2/3 mb-3" />
-              <div className="h-3 bg-slate-100 rounded w-1/2 mb-6" />
-              <div className="h-3 bg-slate-100 rounded w-full mb-2" />
-              <div className="h-3 bg-slate-100 rounded w-full" />
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {/* PROJETS */}
-      {!isLoading && (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredProjects.map((project) => (
+      {/* GRID */}
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+        {isLoading ? (
+          Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-32 rounded-xl bg-muted/40 animate-pulse border border-border/50" />
+          ))
+        ) : (
+          filteredProjects.map((project) => (
             <Card
               key={project.id}
-              className="border border-border p-6 hover:shadow-md transition-shadow"
+              className="group relative flex flex-col border-border/60 transition-all duration-200 overflow-hidden shadow-sm"
             >
-              {/* HEADER CARD */}
-              <div className="mb-4 flex items-start justify-between">
-                <div>
-                  <h3 className="font-semibold">{project.name}</h3>
-                  <p className="text-xs text-foreground/40 mt-0.5">
-                    Créé le {new Date(project.createdAt).toLocaleDateString('fr-FR')}
-                  </p>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {project.owner && (
-                      <>
-                        <DropdownMenuItem
-                          className="flex gap-2"
-                          onClick={() => openSettingsDialog(project)}
-                        >
-                          <Settings className="h-4 w-4" />
-                          Paramètres
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="flex gap-2 text-red-600 focus:text-red-600"
-                          onClick={() => openDeleteDialog(project)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          Supprimer
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-
-              {/* PROVIDERS */}
-              <div className="flex flex-wrap gap-1.5 mb-4">
-                {project.authProviders.map((provider) => (
-                  <span
-                    key={provider}
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${providerColors[provider] || 'bg-slate-50 text-slate-600'}`}
-                  >
-                    {provider}
-                  </span>
-                ))}
-              </div>
-
-              {/* CLÉS */}
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Key className="h-3 w-3 text-blue-500 flex-shrink-0" />
-                    <span className="text-[10px] font-mono text-slate-500 truncate">
-                      {project.publicKey}
-                    </span>
+              <div className="p-4 space-y-3">
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <div 
+                      className="h-2.5 w-2.5 rounded-full shrink-0" 
+                      style={{ 
+                        backgroundColor: project.primaryColor,
+                        boxShadow: `0 0 0 4px ${project.primaryColor}15` 
+                      }} 
+                    />
+                    <h3 className="font-bold text-sm truncate uppercase tracking-wide text-foreground/80">
+                      {project.name}
+                    </h3>
                   </div>
-                  <button
-                    onClick={() => copyToClipboard(project.publicKey, `pk-${project.id}`)}
-                    className="ml-2 flex-shrink-0"
-                  >
-                    {copiedId === `pk-${project.id}`
-                      ? <Check className="h-3 w-3 text-green-500" />
-                      : <Copy className="h-3 w-3 text-slate-400 hover:text-slate-700" />
-                    }
-                  </button>
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 rounded-md hover:bg-muted transition-colors">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-44">
+                      <DropdownMenuItem onClick={() => setProjectToView(project)}>
+                        <Settings className="mr-2 h-4 w-4" /> Configurer
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        className="text-destructive focus:text-destructive"
+                        onClick={() => setProjectToDelete(project)}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" /> Supprimer
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
 
-                <div className="flex items-center justify-between bg-amber-50 rounded-lg px-3 py-2 border border-amber-100">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Key className="h-3 w-3 text-amber-500 flex-shrink-0" />
-                    <span className="text-[10px] font-mono text-amber-600 truncate">
-                      {project.owner ? project.secretKey.substring(0, 16) + '********' : 'Accès restreint'}
-                    </span>
-                  </div>
-                  {project.owner && (
-                    <button
-                      onClick={() => copyToClipboard(project.secretKey, `sk-${project.id}`)}
-                      className="ml-2 flex-shrink-0"
-                    >
-                      {copiedId === `sk-${project.id}`
-                        ? <Check className="h-3 w-3 text-green-500" />
-                        : <Copy className="h-3 w-3 text-amber-400 hover:text-amber-700" />
-                      }
-                    </button>
-                  )}
+                <div className="flex flex-wrap gap-1">
+                  {project.authProviders.map((p) => (
+                    <Badge key={p} variant="outline" className={`text-[9px] px-1.5 py-0 border-transparent font-bold ${providerColors[p]}`}>
+                      {p}
+                    </Badge>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-2 text-[10px] text-muted-foreground uppercase tracking-tighter font-medium">
+                   <ShieldCheck className="h-3 w-3 text-green-500" />
+                   Configuration active
                 </div>
               </div>
 
-              {/* THEME + STATUS */}
-              <div className="flex items-center justify-between">
-                <Badge
-                  variant="outline"
-                  className="text-[10px]"
-                  style={{ borderColor: project.primaryColor, color: project.primaryColor }}
-                >
-                  {project.theme}
-                </Badge>
-                <span
-                  className="h-2 w-2 rounded-full"
-                  style={{ backgroundColor: project.primaryColor }}
-                />
+              {/* FOOTER */}
+              <div className="mt-auto px-4 py-2 bg-muted/10 border-t border-border/40 flex items-center justify-between text-[10px] text-muted-foreground font-medium">
+                <span className="flex items-center">
+                  <Calendar className="h-3 w-3 mr-1 opacity-60" />
+                  {new Date(project.createdAt).toLocaleDateString('fr-FR')}
+                </span>
+                <span className="font-mono opacity-40">
+                  REF: {String(project.id).slice(0, 6)}
+                </span>
               </div>
             </Card>
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </div>
 
-      {/* VIDE */}
+      {/* EMPTY STATE */}
       {!isLoading && filteredProjects.length === 0 && (
-        <div className="text-center py-20">
-          <div className="h-16 w-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Plus className="h-8 w-8 text-slate-400" />
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <div className="h-12 w-12 bg-muted rounded-2xl flex items-center justify-center mb-4 text-muted-foreground/30 font-bold">
+            <LayoutGrid className="h-6 w-6" />
           </div>
-          <p className="text-foreground/60 font-medium">
-            {searchTerm ? 'Aucun projet trouvé' : 'Aucun projet pour le moment'}
+          <h3 className="text-lg font-medium">Aucun projet</h3>
+          <p className="text-sm text-muted-foreground">
+            {searchTerm ? "Aucun résultat trouvé pour votre recherche." : "Ajoutez votre premier projet pour commencer."}
           </p>
-          {!searchTerm && (
-            <Button
-              className="mt-4"
-              onClick={() => router.push('/first_app')}
-            >
-              Créer mon premier projet
-            </Button>
-          )}
         </div>
       )}
 
+      {/* MODAL DE CONFIGURATION */}
       {projectToView && (
-        <EditProjectModal
-          project={projectToView}
-          onClose={closeSettingsDialog}
-        />
+        <EditProjectModal project={projectToView} onClose={() => setProjectToView(null)} />
       )}
 
-      <Dialog open={!!projectToDelete} onOpenChange={(open) => !open && closeDeleteDialog()}>
-        <DialogContent className="sm:max-w-md">
+      {/* DIALOGUE DE SUPPRESSION */}
+      <Dialog open={!!projectToDelete} onOpenChange={(open) => !open && setProjectToDelete(null)}>
+        <DialogContent className="max-w-[400px]">
           <DialogHeader>
-            <DialogTitle>Supprimer le projet</DialogTitle>
-            <DialogDescription>
-              Cette action est irreversible. Pour confirmer, saisissez le nom exact du projet:
-              <span className="mt-1 block font-semibold text-foreground">
-                {projectToDelete?.name}
-              </span>
+            <DialogTitle>Supprimer le projet ?</DialogTitle>
+            <DialogDescription className="text-xs">
+              Pour confirmer la suppression de <strong>{projectToDelete?.name}</strong>, veuillez saisir son nom ci-dessous.
             </DialogDescription>
           </DialogHeader>
-
-          <div className="space-y-2">
-            <Input
-              value={deleteConfirmName}
-              onChange={(e) => setDeleteConfirmName(e.target.value)}
-              placeholder="Nom du projet"
-              autoFocus
-            />
-            {error && (
-              <p className="text-xs text-red-600">{error}</p>
-            )}
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={closeDeleteDialog} disabled={isDeleting}>
-              Annuler
-            </Button>
-            <Button
-              variant="destructive"
+          <Input 
+            value={deleteConfirmName} 
+            onChange={(e) => setDeleteConfirmName(e.target.value)}
+            placeholder="Nom du projet"
+            className="mt-2"
+          />
+          <DialogFooter className="mt-4 gap-2">
+            <Button variant="outline" onClick={() => setProjectToDelete(null)} disabled={isDeleting} className="w-full text-xs">Annuler</Button>
+            <Button 
+              variant="destructive" 
+              disabled={isDeleting || deleteConfirmName !== projectToDelete?.name}
               onClick={() => void handleDelete()}
-              disabled={
-                isDeleting ||
-                !projectToDelete ||
-                deleteConfirmName.trim() !== projectToDelete.name
-              }
+              className="w-full text-xs"
             >
-              {isDeleting ? 'Suppression...' : 'Supprimer definitivement'}
+              {isDeleting ? "Suppression..." : "Supprimer définitivement"}
             </Button>
           </DialogFooter>
         </DialogContent>
