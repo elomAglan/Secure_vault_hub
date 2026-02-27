@@ -36,6 +36,37 @@ export default function ApiDocsPage() {
   "password": "MotDePasse123"
 }`
     },
+    {
+      method: 'POST',
+      path: '/sdk/{publicKey}/auth/forgot-password',
+      desc: 'Envoyer un email de réinitialisation de mot de passe',
+      auth: 'publicKey',
+      body: `{
+  "email": "john@example.com"
+}`
+    },
+    {
+      method: 'POST',
+      path: '/sdk/{publicKey}/auth/reset-password',
+      desc: 'Réinitialiser le mot de passe avec le token reçu par email',
+      auth: 'publicKey',
+      body: `{
+  "token": "reset_token_recu_par_email",
+  "newPassword": "NouveauMotDePasse123"
+}`
+    },
+    {
+      method: 'GET',
+      path: '/sdk/{publicKey}/oauth/google',
+      desc: 'Rediriger l\'utilisateur vers Google pour connexion OAuth',
+      auth: 'publicKey',
+    },
+    {
+      method: 'GET',
+      path: '/sdk/{publicKey}/oauth/github',
+      desc: 'Rediriger l\'utilisateur vers GitHub pour connexion OAuth',
+      auth: 'publicKey',
+    },
   ]
 
   const adminEndpoints = [
@@ -99,7 +130,9 @@ export default function ApiDocsPage() {
             Référence API
           </h1>
           <p className="text-lg text-slate-500 leading-relaxed">
-            SecureVault propose une API RESTful complète. Utilisez le SDK <code className="text-blue-600 bg-blue-50 px-1 rounded">@vaultsecure/js</code> ou appelez directement les endpoints ci-dessous.
+            SecureVault propose une API RESTful complète. Utilisez le SDK{' '}
+            <code className="text-blue-600 bg-blue-50 px-1 rounded">@vaultsecure/js</code>{' '}
+            ou appelez directement les endpoints ci-dessous.
           </p>
         </header>
 
@@ -125,7 +158,7 @@ export default function ApiDocsPage() {
             <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4">
               <p className="text-xs font-bold uppercase tracking-wider text-blue-600 mb-1">Clé Publique</p>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Utilisée dans le <strong>frontend</strong> pour les opérations utilisateur (register, login). Passée dans l'URL.
+                Utilisée dans le <strong>frontend</strong> pour les opérations utilisateur (register, login, OAuth). Passée dans l'URL.
               </p>
               <code className="text-[10px] font-mono text-blue-700 mt-2 block">pk_abc123...</code>
             </div>
@@ -142,6 +175,9 @@ export default function ApiDocsPage() {
             <pre className="overflow-x-auto rounded-xl bg-slate-900 p-4 text-slate-100 text-sm">
               <code>{`# Endpoints SDK (publicKey dans l'URL)
 curl https://api.securevault.com/sdk/pk_votre_cle/auth/login
+
+# Endpoints OAuth
+curl https://api.securevault.com/sdk/pk_votre_cle/oauth/google
 
 # Endpoints Admin (secretKey dans le header)
 curl https://api.securevault.com/sdk/admin/users \\
@@ -167,7 +203,9 @@ curl https://api.securevault.com/sdk/admin/users \\
         <section className="mb-12">
           <h2 className="text-xl font-bold mb-2 font-sans">Endpoints SDK — Client</h2>
           <p className="text-sm text-slate-500 mb-6">
-            Appelés depuis votre frontend avec la <span className="text-blue-600 font-bold">clé publique</span>.
+            Appelés depuis votre frontend avec la{' '}
+            <span className="text-blue-600 font-bold">clé publique</span>.
+            Inclut l'authentification email/password, reset password et OAuth.
           </p>
           <div className="space-y-4">
             {sdkEndpoints.map((ep, idx) => (
@@ -204,7 +242,9 @@ curl https://api.securevault.com/sdk/admin/users \\
         <section className="mb-12">
           <h2 className="text-xl font-bold mb-2 font-sans">Endpoints Admin — Backend</h2>
           <p className="text-sm text-slate-500 mb-3">
-            Appelés depuis votre backend avec la <span className="text-amber-600 font-bold">clé secrète</span> dans le header <code className="bg-slate-100 px-1 rounded text-xs">X-Secret-Key</code>.
+            Appelés depuis votre backend avec la{' '}
+            <span className="text-amber-600 font-bold">clé secrète</span> dans le header{' '}
+            <code className="bg-slate-100 px-1 rounded text-xs">X-Secret-Key</code>.
           </p>
 
           <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6">
@@ -242,6 +282,43 @@ curl https://api.securevault.com/sdk/admin/users \\
                 )}
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* OAUTH */}
+        <section className="mb-12">
+          <h2 className="text-xl font-bold mb-2 font-sans">OAuth — Google & GitHub</h2>
+          <p className="text-sm text-slate-500 mb-6">
+            Activez Google ou GitHub OAuth dans les paramètres de votre projet pour permettre à vos utilisateurs de se connecter via ces providers.
+          </p>
+          <div className="relative">
+            <pre className="overflow-x-auto rounded-xl bg-slate-900 p-4 text-slate-100 text-sm">
+              <code>{`import { SecureVault } from '@vaultsecure/js'
+
+const vault = new SecureVault({ publicKey: 'pk_...', baseUrl: '...' })
+
+// Redirige vers Google
+vault.signInWithGoogle()
+
+// Redirige vers GitHub
+vault.signInWithGithub()
+
+// Sur la page /auth/callback de votre app
+const result = vault.handleOAuthCallback()
+if (result) {
+  console.log('Connecté :', result.email)
+  // result.token, result.firstName, result.lastName
+}`}</code>
+            </pre>
+            <button
+              onClick={() => copyToClipboard(`vault.signInWithGoogle()\nvault.signInWithGithub()`, 'oauth')}
+              className="absolute right-4 top-4"
+            >
+              {copiedId === 'oauth'
+                ? <Check className="h-4 w-4 text-green-400" />
+                : <Copy className="h-4 w-4 text-slate-500 hover:text-white transition-colors" />
+              }
+            </button>
           </div>
         </section>
 

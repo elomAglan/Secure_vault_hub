@@ -1,12 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { 
-  Copy, Check, Layers, Rocket, ChevronRight
-} from 'lucide-react'
+import { Copy, Check, Layers, Rocket, ChevronRight } from 'lucide-react'
 
 export default function IntegrationGuidePage() {
+  const router = useRouter()
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
   const copyToClipboard = (text: string, id: string) => {
@@ -52,12 +52,38 @@ console.log('Inscrit :', user.email)`
     },
     {
       title: "Connecter un utilisateur",
-      desc: "Authentifiez un utilisateur existant.",
-      code: `const user = await vault.signIn({
+      desc: "Authentifiez un utilisateur existant avec email/password ou OAuth.",
+      code: `// Email & password
+const user = await vault.signIn({
   email: 'john@example.com',
   password: 'MotDePasse123'
 })
-console.log('Connecté :', user.firstName)`
+console.log('Connecté :', user.firstName)
+
+// Google OAuth
+vault.signInWithGoogle()
+
+// GitHub OAuth
+vault.signInWithGithub()`
+    },
+    {
+      title: "Gérer le callback OAuth",
+      desc: "Sur la page /auth/callback de votre app, récupérez le token après connexion OAuth.",
+      code: `// Sur la page /auth/callback
+const result = vault.handleOAuthCallback()
+if (result) {
+  console.log('Connecté via OAuth :', result.email)
+  // result.token, result.firstName, result.lastName
+}`
+    },
+    {
+      title: "Reset de mot de passe",
+      desc: "Permettez à vos utilisateurs de réinitialiser leur mot de passe par email.",
+      code: `// Envoyer l'email de reset
+await vault.forgotPassword('john@example.com')
+
+// Réinitialiser avec le token reçu par email
+await vault.resetPassword('token_recu', 'NouveauMotDePasse123')`
     },
     {
       title: "Gérer la session",
@@ -111,7 +137,8 @@ await admin.deleteUser('user@example.com')`
             Guide d'Intégration
           </h1>
           <p className="text-lg text-slate-500 leading-relaxed">
-            Connectez SecureVault à votre stack en quelques minutes avec le SDK <code className="text-blue-600 bg-blue-50 px-1 rounded text-base">@vaultsecure/js</code>.
+            Connectez SecureVault à votre stack en quelques minutes avec le SDK{' '}
+            <code className="text-blue-600 bg-blue-50 px-1 rounded text-base">@vaultsecure/js</code>.
           </p>
         </header>
 
@@ -169,7 +196,7 @@ await admin.deleteUser('user@example.com')`
         </section>
 
         {/* CTA */}
-        <section className="rounded-2xl border border-blue-100 bg-blue-50/30 p-8 mt-12">
+        <section className="rounded-2xl border border-blue-100 bg-blue-50/30 p-8 mt-12 mb-12">
           <h2 className="text-lg font-bold text-blue-900 mb-2 flex items-center gap-2">
             <Rocket className="h-5 w-5" />
             Prêt pour le déploiement ?
@@ -177,7 +204,10 @@ await admin.deleteUser('user@example.com')`
           <p className="text-sm text-blue-700/80 mb-6">
             Une fois l'intégration terminée, retrouvez vos clés et statistiques dans votre dashboard.
           </p>
-          <button className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors shadow-sm">
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors shadow-sm active:scale-95"
+          >
             Aller au Dashboard
           </button>
         </section>

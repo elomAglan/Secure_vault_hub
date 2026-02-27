@@ -86,7 +86,7 @@ export default function DocsPage() {
               <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4">
                 <p className="text-xs font-bold uppercase tracking-wider text-blue-600 mb-1">Clé Publique</p>
                 <code className="text-[11px] font-mono text-blue-700">pk_abc123...</code>
-                <p className="text-xs text-slate-500 mt-2">Utilisée dans votre frontend pour register/login.</p>
+                <p className="text-xs text-slate-500 mt-2">Utilisée dans votre frontend pour register/login/OAuth.</p>
               </div>
               <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4">
                 <p className="text-xs font-bold uppercase tracking-wider text-amber-600 mb-1">Clé Secrète</p>
@@ -102,10 +102,7 @@ export default function DocsPage() {
               <Terminal className="h-5 w-5 text-slate-400" />
               2. Installer le SDK
             </h2>
-            <CodeBlock
-              id="step2"
-              code="npm install @vaultsecure/js"
-            />
+            <CodeBlock id="step2" code="npm install @vaultsecure/js" />
           </section>
 
           {/* ÉTAPE 3 */}
@@ -150,24 +147,70 @@ console.log('Inscrit :', user.email)`}
             <h2 className="text-2xl font-bold text-slate-900 mb-4 font-sans">
               5. Connecter un utilisateur
             </h2>
+            <p className="text-slate-500 text-sm mb-4">
+              Authentifiez via email/password ou OAuth (Google, GitHub).
+            </p>
             <CodeBlock
               id="step5"
-              code={`const user = await vault.signIn({
+              code={`// Email & password
+const user = await vault.signIn({
   email: 'john@example.com',
   password: 'MotDePasse123'
 })
+console.log('Connecté :', user.firstName)
 
-console.log('Connecté :', user.firstName)`}
+// Google OAuth
+vault.signInWithGoogle()
+
+// GitHub OAuth
+vault.signInWithGithub()`}
             />
           </section>
 
           {/* ÉTAPE 6 */}
           <section>
             <h2 className="text-2xl font-bold text-slate-900 mb-4 font-sans">
-              6. Gérer la session
+              6. Gérer le callback OAuth
             </h2>
+            <p className="text-slate-500 text-sm mb-4">
+              Créez une page <code className="bg-slate-100 px-1 rounded text-xs">/auth/callback</code> dans votre app pour récupérer le token après connexion OAuth.
+            </p>
             <CodeBlock
               id="step6"
+              code={`// Sur la page /auth/callback de votre app
+const result = vault.handleOAuthCallback()
+if (result) {
+  console.log('Connecté via OAuth :', result.email)
+  // result.token, result.firstName, result.lastName
+}`}
+            />
+          </section>
+
+          {/* ÉTAPE 7 */}
+          <section>
+            <h2 className="text-2xl font-bold text-slate-900 mb-4 font-sans">
+              7. Reset de mot de passe
+            </h2>
+            <p className="text-slate-500 text-sm mb-4">
+              Permettez à vos utilisateurs de réinitialiser leur mot de passe par email.
+            </p>
+            <CodeBlock
+              id="step7"
+              code={`// Envoyer l'email de reset
+await vault.forgotPassword('john@example.com')
+
+// Réinitialiser avec le token reçu par email
+await vault.resetPassword('token_recu', 'NouveauMotDePasse123')`}
+            />
+          </section>
+
+          {/* ÉTAPE 8 */}
+          <section>
+            <h2 className="text-2xl font-bold text-slate-900 mb-4 font-sans">
+              8. Gérer la session
+            </h2>
+            <CodeBlock
+              id="step8"
               code={`// Vérifier si connecté
 if (vault.isSignedIn()) {
   const user = vault.getUser()
@@ -179,16 +222,16 @@ vault.signOut()`}
             />
           </section>
 
-          {/* ÉTAPE 7 */}
+          {/* ÉTAPE 9 */}
           <section>
             <h2 className="text-2xl font-bold text-slate-900 mb-2 font-sans">
-              7. SDK Admin (backend uniquement)
+              9. SDK Admin (backend uniquement)
             </h2>
             <p className="text-slate-500 text-sm mb-4">
               Utilisez la <strong>clé secrète</strong> pour gérer vos utilisateurs depuis votre serveur. Ne jamais exposer côté client.
             </p>
             <CodeBlock
-              id="step7"
+              id="step9"
               code={`import { VaultAdmin } from '@vaultsecure/js'
 
 const admin = new VaultAdmin(
@@ -239,25 +282,25 @@ await admin.deleteUser('user@example.com')`}
         </section>
 
         {/* SUPPORT */}
-<footer className="mt-16 border-t border-slate-200 pt-8 text-center pb-12">
-  <h2 className="text-lg font-bold mb-2 font-sans text-slate-900">
-    Besoin d'aide ?
-  </h2>
+        <footer className="mt-16 border-t border-slate-200 pt-8 text-center pb-12">
+          <h2 className="text-lg font-bold mb-2 font-sans text-slate-900">
+            Besoin d'aide ?
+          </h2>
+          <p className="text-slate-500 text-sm mb-6">
+            Notre équipe est disponible pour vous accompagner dans votre intégration.
+          </p>
+          <div className="flex justify-center">
+            {/* Correction : Ajout de la balise <a> ouvrante */}
+            <a 
+              href="mailto:Aglanelom0@gmail.com"
+              className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-[#004a80] transition-colors no-underline"
+            >
+              <Mail className="h-4 w-4" />
+              Aglanelom0@gmail.com
+            </a>
+          </div>
+        </footer>
 
-  <p className="text-slate-500 text-sm mb-6">
-    Notre équipe est disponible pour vous accompagner dans votre intégration.
-  </p>
-
-  <div className="flex justify-center">
-    <a
-      href="mailto:support@securevault.com"
-      className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-blue-600 transition-colors no-underline"
-    >
-      <Mail className="h-4 w-4" />
-      support@securevault.com
-    </a>
-  </div>
-</footer>
       </motion.div>
     </div>
   )
