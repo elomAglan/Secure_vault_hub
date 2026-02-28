@@ -35,6 +35,7 @@ import { Input } from '@/components/ui/input'
 import { useProjectStore } from '@/store/projectStore'
 import { appToast } from '@/lib/toast'
 import { teamService, TeamInvitation, TeamMember } from '@/app/services/teamService'
+import api from '@/lib/api'
 
 export default function TeamPage() {
   const { projects, fetchProjects } = useProjectStore()
@@ -43,6 +44,7 @@ export default function TeamPage() {
   const [selectedProjectId, setSelectedProjectId] = useState<string>('')
   const [members, setMembers] = useState<TeamMember[]>([])
   const [invitations, setInvitations] = useState<TeamInvitation[]>([])
+  const [myRole, setMyRole] = useState<string | null>(null)
 
   const [isLoading, setIsLoading] = useState(false)
   const [isInviting, setIsInviting] = useState(false)
@@ -51,20 +53,17 @@ export default function TeamPage() {
   const [invitationActionLoadingId, setInvitationActionLoadingId] = useState<number | null>(null)
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
+
   const selectedProject = useMemo(
     () => projects.find((project) => String(project.id) === selectedProjectId),
     [projects, selectedProjectId]
   )
-  const isOwner = selectedProject?.owner ?? false
-  const isAdminOrOwner = isOwner
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const isOwner = myRole === 'OWNER'
+  const isAdminOrOwner = myRole === 'OWNER' || myRole === 'ADMIN'
 
-  useEffect(() => {
-    void fetchProjects()
-  }, [fetchProjects])
+  useEffect(() => { setMounted(true) }, [])
+  useEffect(() => { void fetchProjects() }, [fetchProjects])
 
   useEffect(() => {
     if (!projects.length) return
@@ -74,7 +73,17 @@ export default function TeamPage() {
   useEffect(() => {
     if (!selectedProjectId) return
     void loadTeamData(Number(selectedProjectId))
+    void loadMyRole(Number(selectedProjectId))
   }, [selectedProjectId])
+
+  const loadMyRole = async (projectId: number) => {
+    try {
+      const res = await api.get(`/api/projects/${projectId}/my-role`)
+      setMyRole(res.data.role)
+    } catch {
+      setMyRole(null)
+    }
+  }
 
   const loadTeamData = async (projectId: number) => {
     setIsLoading(true)
@@ -83,7 +92,6 @@ export default function TeamPage() {
         teamService.getMembers(projectId),
         teamService.getPendingInvitations(projectId),
       ])
-
       setMembers(membersData)
       setInvitations(invitationsData)
     } catch {
@@ -96,12 +104,7 @@ export default function TeamPage() {
   const handleInvite = async () => {
     const projectId = Number(selectedProjectId)
     const email = inviteEmail.trim()
-
-    if (!projectId) return
-    if (!email) {
-      appToast.error('Email requis')
-      return
-    }
+    if (!projectId || !email) { appToast.error('Email requis'); return }
 
     setIsInviting(true)
     try {
@@ -120,7 +123,6 @@ export default function TeamPage() {
   const handleCancelInvitation = async (invitationId: number) => {
     const projectId = Number(selectedProjectId)
     if (!projectId) return
-
     setInvitationActionLoadingId(invitationId)
     try {
       await teamService.cancelInvitation(projectId, invitationId)
@@ -136,7 +138,6 @@ export default function TeamPage() {
   const handleChangeRole = async (memberId: number, role: 'admin' | 'member') => {
     const projectId = Number(selectedProjectId)
     if (!projectId) return
-
     setRoleActionLoadingId(memberId)
     try {
       await teamService.changeMemberRole(projectId, memberId, role)
@@ -153,7 +154,6 @@ export default function TeamPage() {
     const projectId = Number(selectedProjectId)
     if (!projectId) return
     if (!confirm(`Retirer ${member.firstName} ${member.lastName} de l'équipe ?`)) return
-
     setMemberActionLoadingId(member.id)
     try {
       await teamService.removeMember(projectId, member.id)
@@ -185,10 +185,10 @@ export default function TeamPage() {
           <h1 className="text-3xl font-bold">Équipe</h1>
           <p className="mt-2 text-foreground/60">Gérez les membres de l'équipe et leurs permissions</p>
         </div>
-        {mounted ? (
+        {mounted && isAdminOrOwner && (
           <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
             <DialogTrigger asChild>
-              <Button disabled={!selectedProjectId || !isAdminOrOwner}>
+              <Button disabled={!selectedProjectId}>
                 <Plus className="mr-2 h-4 w-4" />
                 Inviter un membre
               </Button>
@@ -222,11 +222,6 @@ export default function TeamPage() {
               </div>
             </DialogContent>
           </Dialog>
-        ) : (
-          <Button disabled>
-            <Plus className="mr-2 h-4 w-4" />
-            Inviter un membre
-          </Button>
         )}
       </div>
 
@@ -261,7 +256,9 @@ export default function TeamPage() {
                 <TableHead className="px-6 py-4 font-semibold">Email</TableHead>
                 <TableHead className="px-6 py-4 font-semibold">Rôle</TableHead>
                 <TableHead className="px-6 py-4 font-semibold">Rejoint le</TableHead>
-                <TableHead className="px-6 py-4 text-right font-semibold">Actions</TableHead>
+                {isAdminOrOwner && (
+                  <TableHead className="px-6 py-4 text-right font-semibold">Actions</TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -289,33 +286,33 @@ export default function TeamPage() {
                 </TableRow>
               )}
 
-              {!isLoading &&
-                members.map((member) => {
-                  const role = member.role.toLowerCase()
-                  const isMemberOwner = role === 'owner'
-                  const isMemberBusy = roleActionLoadingId === member.id || memberActionLoadingId === member.id
+              {!isLoading && members.map((member) => {
+                const role = member.role.toLowerCase()
+                const isMemberOwner = role === 'owner'
+                const isMemberBusy = roleActionLoadingId === member.id || memberActionLoadingId === member.id
 
-                  return (
-                    <TableRow key={member.id} className="border-b border-border hover:bg-background/50">
-                      <TableCell className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-9 w-9">
-                            <AvatarFallback>{getInitials(member.firstName, member.lastName)}</AvatarFallback>
-                          </Avatar>
-                          <span className="text-sm font-medium">
-                            {member.firstName} {member.lastName}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="px-6 py-4 text-sm text-foreground/60">{member.email}</TableCell>
-                      <TableCell className="px-6 py-4">
-                        <Badge variant="outline" className="capitalize">
-                          {formatRole(member.role)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="px-6 py-4 text-sm text-foreground/60">
-                        {new Date(member.joinedAt).toLocaleDateString('fr-FR')}
-                      </TableCell>
+                return (
+                  <TableRow key={member.id} className="border-b border-border hover:bg-background/50">
+                    <TableCell className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-9 w-9">
+                          <AvatarFallback>{getInitials(member.firstName, member.lastName)}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm font-medium">
+                          {member.firstName} {member.lastName}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-6 py-4 text-sm text-foreground/60">{member.email}</TableCell>
+                    <TableCell className="px-6 py-4">
+                      <Badge variant="outline" className="capitalize">
+                        {formatRole(member.role)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="px-6 py-4 text-sm text-foreground/60">
+                      {new Date(member.joinedAt).toLocaleDateString('fr-FR')}
+                    </TableCell>
+                    {isAdminOrOwner && (
                       <TableCell className="px-6 py-4 text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -323,14 +320,16 @@ export default function TeamPage() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8"
-                              disabled={isMemberBusy || !isAdminOrOwner}
+                              disabled={isMemberBusy}
                             >
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             {isMemberOwner && (
-                              <DropdownMenuItem disabled>Propriétaire (actions bloquées)</DropdownMenuItem>
+                              <DropdownMenuItem disabled>
+                                Propriétaire (actions bloquées)
+                              </DropdownMenuItem>
                             )}
                             {isOwner && !isMemberOwner && role !== 'admin' && (
                               <DropdownMenuItem
@@ -348,7 +347,7 @@ export default function TeamPage() {
                                 Passer membre
                               </DropdownMenuItem>
                             )}
-                            {isAdminOrOwner && !isMemberOwner && (
+                            {!isMemberOwner && (
                               <DropdownMenuItem
                                 className="text-destructive"
                                 disabled={isMemberBusy}
@@ -360,9 +359,10 @@ export default function TeamPage() {
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
-                    </TableRow>
-                  )
-                })}
+                    )}
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         </div>
